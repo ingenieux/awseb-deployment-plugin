@@ -8,7 +8,7 @@ TL;DR
 
 Add a Post Build Step. Here's an example:
 
-![http://content.screencast.com/users/aldrinleal/folders/Snagit/media/f2042a57-892f-4cd0-9400-c6eca2674eba/10.27.2013-16.58.png](Example Config)
+![Example Config(http://content.screencast.com/users/aldrinleal/folders/Snagit/media/f2042a57-892f-4cd0-9400-c6eca2674eba/10.27.2013-16.58.png)
 
 Results into this on your logs:
 
