@@ -167,14 +167,14 @@ public class AWSEBDeploymentBuilder extends Recorder implements BuildStep,
 			this.versionLabelFormat = versionLabelFormat;
 		}
 
-		private String rootDirectory;
+		private String rootObject;
 
-		public String getRootDirectory() {
-			return rootDirectory;
+		public String getRootObject() {
+			return rootObject;
 		}
 
-		public void setRootDirectory(String rootDirectory) {
-			this.rootDirectory = rootDirectory;
+		public void setRootObject(String rootDirectory) {
+			this.rootObject = rootDirectory;
 		}
 
 		/**

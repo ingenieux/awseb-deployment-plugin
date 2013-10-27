@@ -73,7 +73,7 @@ public class Deployer {
 		this.bucketName = descriptorImpl.getBucketName();
 		this.environmentName = descriptorImpl.getEnvironmentName();
 		this.keyPrefix = descriptorImpl.getKeyPrefix();
-		this.rootDirectory = descriptorImpl.getRootDirectory();
+		this.rootDirectory = descriptorImpl.getRootObject();
 		this.versionLabelFormat = descriptorImpl.getVersionLabelFormat();
 	}
 

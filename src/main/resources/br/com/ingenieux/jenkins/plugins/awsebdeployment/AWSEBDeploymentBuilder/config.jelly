@@ -27,7 +27,7 @@
   <f:entry title="S3 Key Prefix" field="keyPrefix">
     <f:textbox />
   </f:entry>
-  <f:entry title="Root Directory" field="rootDirectory">
+  <f:entry title="Root Object (File / Directory)" field="rootObject">
     <f:textbox />
   </f:entry>
   <f:entry title="Version Label Format" field="versionLabelFormat">
