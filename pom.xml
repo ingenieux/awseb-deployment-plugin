@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.509.4</version>
+        <!-- which version of Jenkins is this plugin built against? -->
+    </parent>
+
+    <groupId>br.com.ingenieux.jenkins.plugins</groupId>
+    <artifactId>awseb-deployment</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>hpi</packaging>
+
+    <developers>
+        <developer> <id>aldrinleal</id> <name>Aldrin Leal</name> </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:ssh://github.com/ingenieux/awseb-deployment-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/ingenieux/awseb-deployment-plugin.git</developerConnection>
+        <url>https://github.com/ingenieux/awseb-deployment-plugin</url>
+    </scm>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.6.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
+    <repositories>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>

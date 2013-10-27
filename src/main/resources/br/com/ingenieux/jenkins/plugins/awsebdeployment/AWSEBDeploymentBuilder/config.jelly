@@ -1,0 +1,39 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This jelly script is used for per-project configuration.
+
+    See global.jelly for a general discussion about jelly script.
+  -->
+
+  <!--
+    Creates a text field that shows the value of the "name" property.
+    When submitted, it will be passed to the corresponding constructor parameter.
+  -->
+  <f:entry title="AWS Access Key Id" field="awsAccessKeyId">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="AWS Secret Shared Key" field="awsSecretSharedKey">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="AWS Region" field="awsRegion">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Application Name" field="applicationName">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="S3 Bucket Name" field="bucketName">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="S3 Key Prefix" field="keyPrefix">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Root Directory" field="rootDirectory">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Version Label Format" field="versionLabelFormat">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Environment Name" field="environmentName">
+    <f:textbox />
+  </f:entry>
+</j:jelly>
