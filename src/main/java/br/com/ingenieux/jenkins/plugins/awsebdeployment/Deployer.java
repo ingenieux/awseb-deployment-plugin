@@ -2,19 +2,27 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.FilePath.FileCallable;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.model.AbstractBuild;
+import hudson.remoting.VirtualChannel;
+import hudson.util.DirScanner;
+import hudson.util.FileVisitor;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tools.zip.ZipEntry;
+import org.apache.tools.zip.ZipOutputStream;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentBuilder.DescriptorImpl;
 
@@ -81,7 +89,8 @@ public class Deployer {
 			BuildListener listener) throws Exception {
 		PrintStream w = listener.getLogger();
 		EnvVars env = build.getEnvironment(listener);
-		FilePath rootFileObject = new FilePath(build.getWorkspace(), strip(this.rootDirectory));
+		FilePath rootFileObject = new FilePath(build.getWorkspace(),
+				strip(this.rootDirectory));
 
 		File tmpFile = File.createTempFile("awseb-", ".zip");
 		FileOutputStream fos = new FileOutputStream(tmpFile);
@@ -90,14 +99,15 @@ public class Deployer {
 			w.println(String.format("Zipping contents of %s into temp file %s",
 					rootFileObject, tmpFile));
 
-			rootFileObject.zip(fos);
+			zipIt(rootFileObject, fos);
 
 		} else {
-			w.println(String.format("Copying contents of %s into temp file %s", rootFileObject, tmpFile));
-			
+			w.println(String.format("Copying contents of %s into temp file %s",
+					rootFileObject, tmpFile));
+
 			rootFileObject.copyTo(fos);
 		}
-		
+
 		IOUtils.closeQuietly(fos);
 
 		/**
@@ -111,8 +121,8 @@ public class Deployer {
 		String objectKey = String.format("%s/%s-%s.zip", keyPrefix,
 				applicationName, versionLabel);
 
-		String s3ObjectPath = String.format("s3://%s/%s", bucketName,
-				objectKey);
+		String s3ObjectPath = String
+				.format("s3://%s/%s", bucketName, objectKey);
 
 		{
 			w.println(String.format("Uploading file %s as %s", tmpFile,
@@ -148,8 +158,9 @@ public class Deployer {
 					String environmentId = environments.getEnvironments()
 							.get(0).getEnvironmentId();
 
-					w.println(String.format("Attempt %d/%s", nAttempt, MAX_ATTEMPTS));
-					
+					w.println(String.format("Attempt %d/%s", nAttempt,
+							MAX_ATTEMPTS));
+
 					w.println(String
 							.format("Environment found (environment id=%s). Attempting to update environment to version label %s",
 									environmentId, versionLabel));
@@ -160,26 +171,27 @@ public class Deployer {
 
 					try {
 						awseb.updateEnvironment(uavReq);
-						
+
 						w.println("q'Apla!");
-						
+
 						listener.finished(Result.SUCCESS);
-						
+
 						return;
 					} catch (Exception exc) {
 						w.println("Problem: " + exc.getMessage());
-						
+
 						if (nAttempt == MAX_ATTEMPTS) {
 							w.println("Giving it up");
-							
+
 							listener.fatalError(exc.getMessage());
 							listener.finished(Result.FAILURE);
-							
+
 							throw exc;
 						}
-						
-						w.println(String.format("Reattempting in 90s, up to %d", MAX_ATTEMPTS));
-						
+
+						w.println(String.format(
+								"Reattempting in 90s, up to %d", MAX_ATTEMPTS));
+
 						Thread.sleep(TimeUnit.SECONDS.toMillis(90));
 					}
 				}
@@ -189,6 +201,72 @@ public class Deployer {
 			}
 		}
 
+	}
+
+	/**
+	 * I wish I didn't want to copy the content of Jenkins' ZipArchiver Class
+	 * but in the end that worked.
+	 */
+
+	private void zipIt(final FilePath rootFileObject, final FileOutputStream fos)
+			throws IOException, InterruptedException {
+		final ZipOutputStream zipOut = new ZipOutputStream(fos);
+		zipOut.setEncoding(System.getProperty("file.encoding"));
+
+		rootFileObject.act(new FileCallable<Void>() {
+			public Void invoke(final File outerFile, VirtualChannel channel)
+					throws IOException, InterruptedException {
+				new DirScanner.Full().scan(outerFile, new FileVisitor() {
+					@Override
+					public void visit(File f, String relativePath)
+							throws IOException {
+						int mode = hudson.util.IOUtils.mode(f);
+
+						if (f.equals(outerFile))
+							return;
+
+						String relPath = relativePath.substring(
+								1 + outerFile.getName().length()).replace('\\',
+								'/');
+
+						if (f.isDirectory()) {
+							ZipEntry dirZipEntry = new ZipEntry(relPath + '/');
+
+							dirZipEntry.setExternalAttributes(1 << 4);
+
+							if (-1 != mode)
+								dirZipEntry.setUnixMode(mode);
+
+							dirZipEntry.setTime(f.lastModified());
+
+							zipOut.putNextEntry(dirZipEntry);
+
+							zipOut.closeEntry();
+						} else {
+							ZipEntry fileZipEntry = new ZipEntry(relPath);
+
+							if (-1 != mode)
+								fileZipEntry.setUnixMode(mode);
+
+							fileZipEntry.setTime(f.lastModified());
+
+							zipOut.putNextEntry(fileZipEntry);
+
+							FileInputStream fis = new FileInputStream(f);
+							IOUtils.copy(fis, zipOut);
+
+							IOUtils.closeQuietly(fis);
+
+							zipOut.closeEntry();
+
+						}
+					}
+				});
+				return null;
+			}
+		});
+
+		zipOut.close();
 	}
 
 	private String strip(String str) {

@@ -1,10 +1,8 @@
-jenkins-awseb-plugin
-====================
+# jenkins-awseb-plugin
 
 Jenkins Plugin for AWS Elastic Beanstalk
 
-TL;DR
-=====
+# TL;DR
 
 Add a Post Build Step. Here's an example:
 
@@ -23,10 +21,8 @@ Finished: SUCCESS
 
 Enjoy
 
-Gotchas
-=======
+# Gotchas and Todo
 
-  * No validation is performed
-  * Its not working correctly when the root object is a Directory (it adds the prepending dir name. No good)
-  * Doesn't do include/excludes
   * Environment Update hasn't been very tested
+  * No validation is performed
+  * Doesn't do include/excludes
