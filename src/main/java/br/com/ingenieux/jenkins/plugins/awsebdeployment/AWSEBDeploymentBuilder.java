@@ -10,6 +10,9 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+
+import java.io.Serializable;
+
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.StaplerRequest;
@@ -17,8 +20,8 @@ import org.kohsuke.stapler.StaplerRequest;
 /**
  * AWS Elastic Beanstalk Deployment
  */
-@SuppressWarnings("unchecked")
-public class AWSEBDeploymentBuilder extends Recorder implements BuildStep {
+@SuppressWarnings({ "unchecked", "serial" })
+public class AWSEBDeploymentBuilder extends Recorder implements BuildStep, Serializable {
 	private DescriptorImpl descriptorImpl;
 
 	public AWSEBDeploymentBuilder(DescriptorImpl impl) {
@@ -55,7 +58,7 @@ public class AWSEBDeploymentBuilder extends Recorder implements BuildStep {
 	// This indicates to Jenkins that this is an implementation of an extension
 	// point.
 	public static final class DescriptorImpl extends
-			BuildStepDescriptor<Publisher> {
+			BuildStepDescriptor<Publisher> implements Serializable {
 		/**
 		 * Access Key Id
 		 */
