@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
@@ -40,12 +41,12 @@ import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
-public class Deployer {
+public class Deployer implements Serializable {
 	private static final int MAX_ATTEMPTS = 15;
 
-	private AmazonS3 s3;
+	private transient AmazonS3 s3;
 
-	private AWSElasticBeanstalkClient awseb;
+	private transient AWSElasticBeanstalkClient awseb;
 
 	private String applicationName;
 

@@ -25,6 +25,7 @@ public class AWSEBDeploymentBuilder extends Recorder implements BuildStep {
 			Deployer deployer = new Deployer(this.descriptorImpl);
 
 			deployer.perform(build, launcher, listener);
+			
 			return true;
 		} catch (Exception exc) {
 			throw new RuntimeException(exc);
