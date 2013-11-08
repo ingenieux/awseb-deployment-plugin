@@ -24,8 +24,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipOutputStream;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentBuilder.DescriptorImpl;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
