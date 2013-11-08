@@ -30,6 +30,12 @@
   <f:entry title="Root Object (File / Directory)" field="rootObject">
     <f:textbox />
   </f:entry>
+  <f:entry title="Includes" field="includes">
+    <f:textarea />
+  </f:entry>
+  <f:entry title="Excludes" field="excludes">
+    <f:textarea />
+  </f:entry>
   <f:entry title="Version Label Format" field="versionLabelFormat">
     <f:textbox />
   </f:entry>

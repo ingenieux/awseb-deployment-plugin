@@ -57,7 +57,11 @@ public class Deployer {
 
 	private String keyPrefix;
 
-	private String rootDirectory;
+	private String rootObject;
+	
+	private String includes;
+	
+	private String excludes;
 
 	private String versionLabelFormat;
 
@@ -81,7 +85,7 @@ public class Deployer {
 		this.bucketName = descriptorImpl.getBucketName();
 		this.environmentName = descriptorImpl.getEnvironmentName();
 		this.keyPrefix = descriptorImpl.getKeyPrefix();
-		this.rootDirectory = descriptorImpl.getRootObject();
+		this.rootObject = descriptorImpl.getRootObject();
 		this.versionLabelFormat = descriptorImpl.getVersionLabelFormat();
 	}
 
@@ -90,7 +94,7 @@ public class Deployer {
 		PrintStream w = listener.getLogger();
 		EnvVars env = build.getEnvironment(listener);
 		FilePath rootFileObject = new FilePath(build.getWorkspace(),
-				strip(this.rootDirectory));
+				strip(this.rootObject));
 
 		File tmpFile = File.createTempFile("awseb-", ".zip");
 		FileOutputStream fos = new FileOutputStream(tmpFile);
@@ -208,6 +212,7 @@ public class Deployer {
 	 * but in the end that worked.
 	 */
 
+	@SuppressWarnings("serial")
 	private void zipIt(final FilePath rootFileObject, final FileOutputStream fos)
 			throws IOException, InterruptedException {
 		final ZipOutputStream zipOut = new ZipOutputStream(fos);
@@ -216,7 +221,7 @@ public class Deployer {
 		rootFileObject.act(new FileCallable<Void>() {
 			public Void invoke(final File outerFile, VirtualChannel channel)
 					throws IOException, InterruptedException {
-				new DirScanner.Full().scan(outerFile, new FileVisitor() {
+				new DirScanner.Glob(includes, excludes).scan(outerFile, new FileVisitor() {
 					@Override
 					public void visit(File f, String relativePath)
 							throws IOException {

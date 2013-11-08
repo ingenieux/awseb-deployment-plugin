@@ -1,11 +1,8 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.BuildListener;
-import hudson.model.Describable;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.tasks.BuildStep;
@@ -13,22 +10,15 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-
-import java.io.PrintStream;
-
 import net.sf.json.JSONObject;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
 import org.kohsuke.stapler.StaplerRequest;
-
-import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 
 /**
  * AWS Elastic Beanstalk Deployment
  */
 @SuppressWarnings("unchecked")
-public class AWSEBDeploymentBuilder extends Recorder implements BuildStep,
-		Describable<Publisher> {
+public class AWSEBDeploymentBuilder extends Recorder implements BuildStep {
 	private DescriptorImpl descriptorImpl;
 
 	public AWSEBDeploymentBuilder(DescriptorImpl impl) {
@@ -40,7 +30,7 @@ public class AWSEBDeploymentBuilder extends Recorder implements BuildStep,
 			BuildListener listener) {
 		try {
 			Deployer deployer = new Deployer(this.descriptorImpl);
-			
+
 			deployer.perform(build, launcher, listener);
 			return true;
 		} catch (Exception exc) {
@@ -175,6 +165,26 @@ public class AWSEBDeploymentBuilder extends Recorder implements BuildStep,
 
 		public void setRootObject(String rootDirectory) {
 			this.rootObject = rootDirectory;
+		}
+
+		private String includes;
+
+		public String getIncludes() {
+			return includes;
+		}
+
+		public void setIncludes(String includes) {
+			this.includes = includes;
+		}
+
+		private String excludes;
+
+		public String getExcludes() {
+			return excludes;
+		}
+
+		public void setExcludes(String excludes) {
+			this.excludes = excludes;
 		}
 
 		/**
