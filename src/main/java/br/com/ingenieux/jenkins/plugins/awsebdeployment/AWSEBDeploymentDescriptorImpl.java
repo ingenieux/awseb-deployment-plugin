@@ -23,8 +23,12 @@ import org.kohsuke.stapler.StaplerRequest;
 @Extension
 // This indicates to Jenkins that this is an implementation of an extension
 // point.
-public final class DescriptorImpl extends BuildStepDescriptor<Publisher>
+public final class AWSEBDeploymentDescriptorImpl extends BuildStepDescriptor<Publisher>
 		implements Serializable {
+	public AWSEBDeploymentDescriptorImpl() {
+		super(AWSEBDeploymentBuilder.class);
+	}
+
 	/**
 	 * Access Key Id
 	 */

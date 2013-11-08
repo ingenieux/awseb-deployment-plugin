@@ -12,9 +12,9 @@ import hudson.tasks.Recorder;
  */
 @SuppressWarnings({ "unchecked" })
 public class AWSEBDeploymentBuilder extends Recorder implements BuildStep {
-	private DescriptorImpl descriptorImpl;
+	private AWSEBDeploymentDescriptorImpl descriptorImpl;
 
-	public AWSEBDeploymentBuilder(DescriptorImpl impl) {
+	public AWSEBDeploymentBuilder(AWSEBDeploymentDescriptorImpl impl) {
 		this.descriptorImpl = impl;
 	}
 

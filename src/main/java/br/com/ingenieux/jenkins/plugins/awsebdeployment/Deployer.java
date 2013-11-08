@@ -63,7 +63,7 @@ public class Deployer {
 
 	private String versionLabelFormat;
 
-	public Deployer(DescriptorImpl descriptorImpl) {
+	public Deployer(AWSEBDeploymentDescriptorImpl descriptorImpl) {
 		AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
 				new StaticCredentialsProvider(new BasicAWSCredentials(
 						descriptorImpl.getAwsAccessKeyId(),
