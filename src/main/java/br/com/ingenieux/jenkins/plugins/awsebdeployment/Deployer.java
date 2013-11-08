@@ -32,6 +32,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
@@ -43,28 +44,15 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 public class Deployer implements Serializable {
 	private static final int MAX_ATTEMPTS = 15;
-
-	private transient AmazonS3 s3;
-
-	private transient AWSElasticBeanstalkClient awseb;
-
-	private String applicationName;
-
-	private String bucketName;
-
-	private String environmentName;
-
-	private String keyPrefix;
-
-	private String rootObject;
 	
-	private String includes;
-	
-	private String excludes;
-
-	private String versionLabelFormat;
+	private AWSEBDeploymentDescriptorImpl descriptorImpl;
 
 	public Deployer(AWSEBDeploymentDescriptorImpl descriptorImpl) {
+		this.descriptorImpl = descriptorImpl;
+	}
+
+	public void perform(AbstractBuild<?, ?> build, Launcher launcher,
+			BuildListener listener) throws Exception {
 		AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
 				new StaticCredentialsProvider(new BasicAWSCredentials(
 						descriptorImpl.getAwsAccessKeyId(),
@@ -75,25 +63,26 @@ public class Deployer implements Serializable {
 
 		clientConfig.setUserAgent("ingenieux CloudButler/version");
 
-		this.s3 = region.createClient(AmazonS3Client.class, credentials,
+		AmazonS3 s3 = region.createClient(AmazonS3Client.class, credentials,
 				clientConfig);
-		this.awseb = region.createClient(AWSElasticBeanstalkClient.class,
+		AWSElasticBeanstalk awseb = region.createClient(AWSElasticBeanstalkClient.class,
 				credentials, clientConfig);
 
-		this.applicationName = descriptorImpl.getApplicationName();
-		this.bucketName = descriptorImpl.getBucketName();
-		this.environmentName = descriptorImpl.getEnvironmentName();
-		this.keyPrefix = descriptorImpl.getKeyPrefix();
-		this.rootObject = descriptorImpl.getRootObject();
-		this.versionLabelFormat = descriptorImpl.getVersionLabelFormat();
-	}
+		String applicationName = descriptorImpl.getApplicationName();
+		String bucketName = descriptorImpl.getBucketName();
+		String environmentName = descriptorImpl.getEnvironmentName();
+		String keyPrefix = descriptorImpl.getKeyPrefix();
+		String rootObject = descriptorImpl.getRootObject();
+		String versionLabelFormat = descriptorImpl.getVersionLabelFormat();
+		
+		String includes = descriptorImpl.getIncludes();
+		
+		String excludes = descriptorImpl.getExcludes();
 
-	public void perform(AbstractBuild<?, ?> build, Launcher launcher,
-			BuildListener listener) throws Exception {
 		PrintStream w = listener.getLogger();
 		EnvVars env = build.getEnvironment(listener);
 		FilePath rootFileObject = new FilePath(build.getWorkspace(),
-				strip(this.rootObject));
+				strip(rootObject));
 
 		File tmpFile = File.createTempFile("awseb-", ".zip");
 		FileOutputStream fos = new FileOutputStream(tmpFile);
@@ -102,7 +91,7 @@ public class Deployer implements Serializable {
 			w.println(String.format("Zipping contents of %s into temp file %s",
 					rootFileObject, tmpFile));
 
-			zipIt(rootFileObject, fos);
+			zipIt(rootFileObject, fos, includes, excludes);
 
 		} else {
 			w.println(String.format("Copying contents of %s into temp file %s",
@@ -212,7 +201,7 @@ public class Deployer implements Serializable {
 	 */
 
 	@SuppressWarnings("serial")
-	private void zipIt(final FilePath rootFileObject, final FileOutputStream fos)
+	private void zipIt(final FilePath rootFileObject, final FileOutputStream fos, final String includes, final String excludes)
 			throws IOException, InterruptedException {
 		final ZipOutputStream zipOut = new ZipOutputStream(fos);
 		zipOut.setEncoding(System.getProperty("file.encoding"));
