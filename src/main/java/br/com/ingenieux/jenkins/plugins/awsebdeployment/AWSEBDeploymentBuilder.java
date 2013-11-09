@@ -22,9 +22,9 @@ public class AWSEBDeploymentBuilder extends Recorder implements BuildStep {
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
 			BuildListener listener) {
 		try {
-			Deployer deployer = new Deployer(this.descriptorImpl);
+			Deployer deployer = new Deployer(this.descriptorImpl, build, launcher, listener);
 
-			deployer.perform(build, launcher, listener);
+			deployer.perform();
 			
 			return true;
 		} catch (Exception exc) {

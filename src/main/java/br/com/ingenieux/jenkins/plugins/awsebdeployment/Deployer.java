@@ -2,29 +2,20 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.FilePath.FileCallable;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.model.AbstractBuild;
-import hudson.remoting.Callable;
-import hudson.remoting.VirtualChannel;
 import hudson.util.DirScanner;
-import hudson.util.FileVisitor;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tools.zip.ZipEntry;
-import org.apache.tools.zip.ZipOutputStream;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -43,247 +34,191 @@ import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
-public class Deployer implements Serializable {
-	public class DeployerUnit implements Callable<Void, Exception> {
-		private final AbstractBuild<?, ?> build;
-		private final BuildListener listener;
-		private final FilePath rootFileObject;
-
-		public DeployerUnit(AbstractBuild<?, ?> build, BuildListener listener,
-				FilePath rootFileObject) {
-			this.build = build;
-			this.listener = listener;
-			this.rootFileObject = rootFileObject;
-		}
-
-		public Void call() throws Exception {
-			AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
-					new StaticCredentialsProvider(new BasicAWSCredentials(
-							descriptorImpl.getAwsAccessKeyId(),
-							descriptorImpl.getAwsSecretSharedKey())));
-			Region region = Region.getRegion(Regions.fromName(descriptorImpl
-					.getAwsRegion()));
-			ClientConfiguration clientConfig = new ClientConfiguration();
-
-			clientConfig.setUserAgent("ingenieux CloudButler/version");
-
-			AmazonS3 s3 = region.createClient(AmazonS3Client.class, credentials,
-					clientConfig);
-			AWSElasticBeanstalk awseb = region.createClient(AWSElasticBeanstalkClient.class,
-					credentials, clientConfig);
-
-			String applicationName = descriptorImpl.getApplicationName();
-			String bucketName = descriptorImpl.getBucketName();
-			String environmentName = descriptorImpl.getEnvironmentName();
-			String keyPrefix = descriptorImpl.getKeyPrefix();
-			String versionLabelFormat = descriptorImpl.getVersionLabelFormat();
-			
-			String includes = descriptorImpl.getIncludes();
-			
-			String excludes = descriptorImpl.getExcludes();
-
-			PrintStream w = listener.getLogger();
-			EnvVars env = build.getEnvironment(listener);
-			File tmpFile = File.createTempFile("awseb-", ".zip");
-			FileOutputStream fos = new FileOutputStream(tmpFile);
-
-			if (rootFileObject.isDirectory()) {
-				w.println(String.format("Zipping contents of %s into temp file %s",
-						rootFileObject, tmpFile));
-
-				zipIt(rootFileObject, fos, includes, excludes);
-			} else {
-				w.println(String.format("Copying contents of %s into temp file %s",
-						rootFileObject, tmpFile));
-
-				rootFileObject.copyTo(fos);
-			}
-
-			IOUtils.closeQuietly(fos);
-
-			/**
-			 * Sets Vars
-			 */
-			keyPrefix = strip(Util.replaceMacro(keyPrefix, env));
-			bucketName = strip(Util.replaceMacro(bucketName, env));
-			applicationName = strip(Util.replaceMacro(applicationName, env));
-			String versionLabel = strip(Util.replaceMacro(versionLabelFormat, env));
-
-			String objectKey = String.format("%s/%s-%s.zip", keyPrefix,
-					applicationName, versionLabel);
-
-			String s3ObjectPath = String
-					.format("s3://%s/%s", bucketName, objectKey);
-
-			{
-				w.println(String.format("Uploading file %s as %s", tmpFile,
-						s3ObjectPath));
-
-				s3.putObject(bucketName, objectKey, tmpFile);
-			}
-
-			{
-				w.println(String
-						.format("Creating application version %s for application %s for path %s",
-								versionLabel, applicationName, s3ObjectPath));
-
-				CreateApplicationVersionRequest cavRequest = new CreateApplicationVersionRequest()
-						.withApplicationName(applicationName)
-						.withAutoCreateApplication(true)
-						.withSourceBundle(new S3Location(bucketName, objectKey))
-						.withVersionLabel(versionLabel);
-				awseb.createApplicationVersion(cavRequest);
-			}
-
-			{
-				DescribeEnvironmentsResult environments = awseb
-						.describeEnvironments(new DescribeEnvironmentsRequest()
-								.withApplicationName(applicationName)
-								.withEnvironmentNames(environmentName));
-
-				boolean found = (1 == environments.getEnvironments().size());
-
-				if (found) {
-					for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
-
-						String environmentId = environments.getEnvironments()
-								.get(0).getEnvironmentId();
-
-						w.println(String.format("Attempt %d/%s", nAttempt,
-								MAX_ATTEMPTS));
-
-						w.println(String
-								.format("Environment found (environment id=%s). Attempting to update environment to version label %s",
-										environmentId, versionLabel));
-
-						UpdateEnvironmentRequest uavReq = new UpdateEnvironmentRequest()
-								.withEnvironmentName(environmentName)
-								.withVersionLabel(versionLabel);
-
-						try {
-							awseb.updateEnvironment(uavReq);
-
-							w.println("q'Apla!");
-
-							listener.finished(Result.SUCCESS);
-
-							return null;
-						} catch (Exception exc) {
-							w.println("Problem: " + exc.getMessage());
-
-							if (nAttempt == MAX_ATTEMPTS) {
-								w.println("Giving it up");
-
-								listener.fatalError(exc.getMessage());
-								listener.finished(Result.FAILURE);
-
-								throw exc;
-							}
-
-							w.println(String.format(
-									"Reattempting in 90s, up to %d", MAX_ATTEMPTS));
-
-							Thread.sleep(TimeUnit.SECONDS.toMillis(90));
-						}
-					}
-				} else {
-					w.println("Environment not found. Continuing");
-					listener.finished(Result.SUCCESS);
-				}
-			}
-
-			return null;
-		}
-	}
-
+public class Deployer {
 	private static final int MAX_ATTEMPTS = 15;
-	
+
 	private AWSEBDeploymentDescriptorImpl descriptorImpl;
 
-	public Deployer(AWSEBDeploymentDescriptorImpl descriptorImpl) {
+	private PrintStream logger;
+
+	private AmazonS3 s3;
+
+	private AWSElasticBeanstalk awseb;
+
+	private File localArchive;
+
+	private FilePath rootFileObject;
+
+	private String keyPrefix;
+
+	private String bucketName;
+
+	private String applicationName;
+
+	private String versionLabel;
+
+	private String objectKey;
+
+	private String s3ObjectPath;
+
+	private EnvVars env;
+
+	private String environmentName;
+
+	private BuildListener listener;
+
+	public Deployer(AWSEBDeploymentDescriptorImpl descriptorImpl,
+			AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		this.descriptorImpl = descriptorImpl;
-	}
-
-	public void perform(final AbstractBuild<?, ?> build, final Launcher launcher,
-			final BuildListener listener) throws Exception {
-		final String rootObject = descriptorImpl.getRootObject();
-		final FilePath rootFileObject = new FilePath(build.getWorkspace(),
-				strip(rootObject));
+		this.logger = listener.getLogger();
+		this.env = build.getEnvironment(listener);
+		this.listener = listener;
 		
-		rootFileObject.act(new DeployerUnit(build, listener, rootFileObject));
+		this.rootFileObject = new FilePath(build.getWorkspace(),
+				strip(descriptorImpl.getRootObject()));
+	}
 
+	public void perform() throws Exception {
+		initAWS();
+
+		localArchive = getLocalFileObject(rootFileObject);
+
+		uploadArchive();
+
+		createApplicationVersion();
+
+		updateEnvironments();
+
+		listener.finished(Result.SUCCESS);
 
 	}
 
-	/**
-	 * I wish I didn't want to copy the content of Jenkins' ZipArchiver Class
-	 * but in the end that worked.
-	 */
+	private void updateEnvironments() throws Exception {
+		DescribeEnvironmentsResult environments = awseb
+				.describeEnvironments(new DescribeEnvironmentsRequest()
+						.withApplicationName(applicationName)
+						.withEnvironmentNames(environmentName));
 
-	@SuppressWarnings("serial")
-	private void zipIt(final FilePath rootFileObject, final FileOutputStream fos, final String includes, final String excludes)
-			throws IOException, InterruptedException {
-		final ZipOutputStream zipOut = new ZipOutputStream(fos);
-		zipOut.setEncoding(System.getProperty("file.encoding"));
+		boolean found = (1 == environments.getEnvironments().size());
 
-		rootFileObject.act(new FileCallable<Void>() {
-			public Void invoke(final File outerFile, VirtualChannel channel)
-					throws IOException, InterruptedException {
-				new DirScanner.Glob(includes, excludes).scan(outerFile, new FileVisitor() {
-					@Override
-					public void visit(File f, String relativePath)
-							throws IOException {
-						int mode = hudson.util.IOUtils.mode(f);
+		if (found) {
+			for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
 
-						if (f.equals(outerFile))
-							return;
+				String environmentId = environments.getEnvironments().get(0)
+						.getEnvironmentId();
 
-						String relPath = relativePath.substring(
-								1 + outerFile.getName().length()).replace('\\',
-								'/');
+				log("Attempt %d/%s", nAttempt, MAX_ATTEMPTS);
 
-						if (f.isDirectory()) {
-							ZipEntry dirZipEntry = new ZipEntry(relPath + '/');
+				log("Environment found (environment id=%s). Attempting to update environment to version label %s",
+						environmentId, versionLabel);
 
-							dirZipEntry.setExternalAttributes(1 << 4);
+				UpdateEnvironmentRequest uavReq = new UpdateEnvironmentRequest()
+						.withEnvironmentName(environmentName).withVersionLabel(
+								versionLabel);
 
-							if (-1 != mode)
-								dirZipEntry.setUnixMode(mode);
+				try {
+					awseb.updateEnvironment(uavReq);
 
-							dirZipEntry.setTime(f.lastModified());
+					log("q'Apla!");
+				} catch (Exception exc) {
+					log("Problem: " + exc.getMessage());
 
-							zipOut.putNextEntry(dirZipEntry);
+					if (nAttempt == MAX_ATTEMPTS) {
+						log("Giving it up");
 
-							zipOut.closeEntry();
-						} else {
-							ZipEntry fileZipEntry = new ZipEntry(relPath);
-
-							if (-1 != mode)
-								fileZipEntry.setUnixMode(mode);
-
-							fileZipEntry.setTime(f.lastModified());
-
-							zipOut.putNextEntry(fileZipEntry);
-
-							FileInputStream fis = new FileInputStream(f);
-							IOUtils.copy(fis, zipOut);
-
-							IOUtils.closeQuietly(fis);
-
-							zipOut.closeEntry();
-
-						}
+						throw exc;
 					}
-				});
-				return null;
-			}
-		});
 
-		zipOut.close();
+					log("Reattempting in 90s, up to %d", MAX_ATTEMPTS);
+
+					Thread.sleep(TimeUnit.SECONDS.toMillis(90));
+				}
+			}
+		} else {
+			log("Environment not found. Continuing");
+		}
 	}
 
-	private String strip(String str) {
+	private void createApplicationVersion() {
+		log("Creating application version %s for application %s for path %s",
+				versionLabel, applicationName, s3ObjectPath);
+
+		CreateApplicationVersionRequest cavRequest = new CreateApplicationVersionRequest()
+				.withApplicationName(applicationName)
+				.withAutoCreateApplication(true)
+				.withSourceBundle(new S3Location(bucketName, objectKey))
+				.withVersionLabel(versionLabel);
+
+		awseb.createApplicationVersion(cavRequest);
+	}
+
+	private void uploadArchive() {
+		this.keyPrefix = getValue(descriptorImpl.getKeyPrefix());
+		this.bucketName = getValue(descriptorImpl.getBucketName());
+		this.applicationName = getValue(descriptorImpl.getApplicationName());
+		this.versionLabel = getValue(descriptorImpl.getVersionLabelFormat());
+		this.environmentName = getValue(descriptorImpl.getEnvironmentName());
+
+		objectKey = String.format("%s/%s-%s.zip", keyPrefix, applicationName,
+				versionLabel);
+
+		s3ObjectPath = String.format("s3://%s/%s", bucketName, objectKey);
+
+		log("Uploading file %s as %s", localArchive.getName(), s3ObjectPath);
+
+		s3.putObject(bucketName, objectKey, localArchive);
+	}
+
+	private String getValue(String value) {
+		return Util.replaceMacro(value, env);
+	}
+
+	private void initAWS() {
+		log("Creating S3 and AWSEB Client (AWS Access Key Id: %s, region: %s)",
+				descriptorImpl.getAwsAccessKeyId(),
+				descriptorImpl.getAwsRegion());
+
+		AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
+				new StaticCredentialsProvider(new BasicAWSCredentials(
+						descriptorImpl.getAwsAccessKeyId(),
+						descriptorImpl.getAwsSecretSharedKey())));
+		Region region = Region.getRegion(Regions.fromName(descriptorImpl
+				.getAwsRegion()));
+		ClientConfiguration clientConfig = new ClientConfiguration();
+
+		clientConfig.setUserAgent("ingenieux CloudButler/version");
+
+		s3 = region.createClient(AmazonS3Client.class, credentials,
+				clientConfig);
+		awseb = region.createClient(AWSElasticBeanstalkClient.class,
+				credentials, clientConfig);
+	}
+
+	void log(String mask, Object... args) {
+		logger.println(String.format(mask, args));
+	}
+
+	private File getLocalFileObject(FilePath rootFileObject) throws Exception {
+		File resultFile = File.createTempFile("awseb-", ".zip");
+
+		if (!rootFileObject.isDirectory()) {
+			log("Root File Object is a file. We assume its a zip file, which is okay.");
+
+			rootFileObject.copyTo(new FileOutputStream(resultFile));
+		} else {
+			log("Zipping contents of Root File Object (%s) into tmp file %s (includes=%s, excludes=%s)",
+					rootFileObject.getName(), resultFile.getName(),
+					descriptorImpl.getIncludes(), descriptorImpl.getExcludes());
+
+			rootFileObject.zip(new FileOutputStream(resultFile),
+					new DirScanner.Glob(descriptorImpl.getIncludes(),
+							descriptorImpl.getExcludes()));
+		}
+
+		return resultFile;
+	}
+
+	private static String strip(String str) {
 		return StringUtils.strip(str, "/ ");
 	}
-
 }
