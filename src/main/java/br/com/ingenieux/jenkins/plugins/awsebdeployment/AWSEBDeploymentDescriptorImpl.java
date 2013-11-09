@@ -27,6 +27,8 @@ public final class AWSEBDeploymentDescriptorImpl extends BuildStepDescriptor<Pub
 		implements Serializable {
 	public AWSEBDeploymentDescriptorImpl() {
 		super(AWSEBDeploymentBuilder.class);
+		
+		load();
 	}
 
 	/**
