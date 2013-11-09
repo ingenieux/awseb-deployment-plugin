@@ -44,6 +44,158 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 public class Deployer implements Serializable {
+	public class DeployerUnit implements Callable<Void, Exception> {
+		private final AbstractBuild<?, ?> build;
+		private final BuildListener listener;
+		private final FilePath rootFileObject;
+
+		public DeployerUnit(AbstractBuild<?, ?> build, BuildListener listener,
+				FilePath rootFileObject) {
+			this.build = build;
+			this.listener = listener;
+			this.rootFileObject = rootFileObject;
+		}
+
+		public Void call() throws Exception {
+			AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
+					new StaticCredentialsProvider(new BasicAWSCredentials(
+							descriptorImpl.getAwsAccessKeyId(),
+							descriptorImpl.getAwsSecretSharedKey())));
+			Region region = Region.getRegion(Regions.fromName(descriptorImpl
+					.getAwsRegion()));
+			ClientConfiguration clientConfig = new ClientConfiguration();
+
+			clientConfig.setUserAgent("ingenieux CloudButler/version");
+
+			AmazonS3 s3 = region.createClient(AmazonS3Client.class, credentials,
+					clientConfig);
+			AWSElasticBeanstalk awseb = region.createClient(AWSElasticBeanstalkClient.class,
+					credentials, clientConfig);
+
+			String applicationName = descriptorImpl.getApplicationName();
+			String bucketName = descriptorImpl.getBucketName();
+			String environmentName = descriptorImpl.getEnvironmentName();
+			String keyPrefix = descriptorImpl.getKeyPrefix();
+			String versionLabelFormat = descriptorImpl.getVersionLabelFormat();
+			
+			String includes = descriptorImpl.getIncludes();
+			
+			String excludes = descriptorImpl.getExcludes();
+
+			PrintStream w = listener.getLogger();
+			EnvVars env = build.getEnvironment(listener);
+			File tmpFile = File.createTempFile("awseb-", ".zip");
+			FileOutputStream fos = new FileOutputStream(tmpFile);
+
+			if (rootFileObject.isDirectory()) {
+				w.println(String.format("Zipping contents of %s into temp file %s",
+						rootFileObject, tmpFile));
+
+				zipIt(rootFileObject, fos, includes, excludes);
+			} else {
+				w.println(String.format("Copying contents of %s into temp file %s",
+						rootFileObject, tmpFile));
+
+				rootFileObject.copyTo(fos);
+			}
+
+			IOUtils.closeQuietly(fos);
+
+			/**
+			 * Sets Vars
+			 */
+			keyPrefix = strip(Util.replaceMacro(keyPrefix, env));
+			bucketName = strip(Util.replaceMacro(bucketName, env));
+			applicationName = strip(Util.replaceMacro(applicationName, env));
+			String versionLabel = strip(Util.replaceMacro(versionLabelFormat, env));
+
+			String objectKey = String.format("%s/%s-%s.zip", keyPrefix,
+					applicationName, versionLabel);
+
+			String s3ObjectPath = String
+					.format("s3://%s/%s", bucketName, objectKey);
+
+			{
+				w.println(String.format("Uploading file %s as %s", tmpFile,
+						s3ObjectPath));
+
+				s3.putObject(bucketName, objectKey, tmpFile);
+			}
+
+			{
+				w.println(String
+						.format("Creating application version %s for application %s for path %s",
+								versionLabel, applicationName, s3ObjectPath));
+
+				CreateApplicationVersionRequest cavRequest = new CreateApplicationVersionRequest()
+						.withApplicationName(applicationName)
+						.withAutoCreateApplication(true)
+						.withSourceBundle(new S3Location(bucketName, objectKey))
+						.withVersionLabel(versionLabel);
+				awseb.createApplicationVersion(cavRequest);
+			}
+
+			{
+				DescribeEnvironmentsResult environments = awseb
+						.describeEnvironments(new DescribeEnvironmentsRequest()
+								.withApplicationName(applicationName)
+								.withEnvironmentNames(environmentName));
+
+				boolean found = (1 == environments.getEnvironments().size());
+
+				if (found) {
+					for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
+
+						String environmentId = environments.getEnvironments()
+								.get(0).getEnvironmentId();
+
+						w.println(String.format("Attempt %d/%s", nAttempt,
+								MAX_ATTEMPTS));
+
+						w.println(String
+								.format("Environment found (environment id=%s). Attempting to update environment to version label %s",
+										environmentId, versionLabel));
+
+						UpdateEnvironmentRequest uavReq = new UpdateEnvironmentRequest()
+								.withEnvironmentName(environmentName)
+								.withVersionLabel(versionLabel);
+
+						try {
+							awseb.updateEnvironment(uavReq);
+
+							w.println("q'Apla!");
+
+							listener.finished(Result.SUCCESS);
+
+							return null;
+						} catch (Exception exc) {
+							w.println("Problem: " + exc.getMessage());
+
+							if (nAttempt == MAX_ATTEMPTS) {
+								w.println("Giving it up");
+
+								listener.fatalError(exc.getMessage());
+								listener.finished(Result.FAILURE);
+
+								throw exc;
+							}
+
+							w.println(String.format(
+									"Reattempting in 90s, up to %d", MAX_ATTEMPTS));
+
+							Thread.sleep(TimeUnit.SECONDS.toMillis(90));
+						}
+					}
+				} else {
+					w.println("Environment not found. Continuing");
+					listener.finished(Result.SUCCESS);
+				}
+			}
+
+			return null;
+		}
+	}
+
 	private static final int MAX_ATTEMPTS = 15;
 	
 	private AWSEBDeploymentDescriptorImpl descriptorImpl;
@@ -58,146 +210,7 @@ public class Deployer implements Serializable {
 		final FilePath rootFileObject = new FilePath(build.getWorkspace(),
 				strip(rootObject));
 		
-		rootFileObject.act(new Callable<Void, Exception>() {
-			public Void call() throws Exception {
-				AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
-						new StaticCredentialsProvider(new BasicAWSCredentials(
-								descriptorImpl.getAwsAccessKeyId(),
-								descriptorImpl.getAwsSecretSharedKey())));
-				Region region = Region.getRegion(Regions.fromName(descriptorImpl
-						.getAwsRegion()));
-				ClientConfiguration clientConfig = new ClientConfiguration();
-
-				clientConfig.setUserAgent("ingenieux CloudButler/version");
-
-				AmazonS3 s3 = region.createClient(AmazonS3Client.class, credentials,
-						clientConfig);
-				AWSElasticBeanstalk awseb = region.createClient(AWSElasticBeanstalkClient.class,
-						credentials, clientConfig);
-
-				String applicationName = descriptorImpl.getApplicationName();
-				String bucketName = descriptorImpl.getBucketName();
-				String environmentName = descriptorImpl.getEnvironmentName();
-				String keyPrefix = descriptorImpl.getKeyPrefix();
-				String versionLabelFormat = descriptorImpl.getVersionLabelFormat();
-				
-				String includes = descriptorImpl.getIncludes();
-				
-				String excludes = descriptorImpl.getExcludes();
-
-				PrintStream w = listener.getLogger();
-				EnvVars env = build.getEnvironment(listener);
-				File tmpFile = File.createTempFile("awseb-", ".zip");
-				FileOutputStream fos = new FileOutputStream(tmpFile);
-
-				if (rootFileObject.isDirectory()) {
-					w.println(String.format("Zipping contents of %s into temp file %s",
-							rootFileObject, tmpFile));
-
-					zipIt(rootFileObject, fos, includes, excludes);
-				} else {
-					w.println(String.format("Copying contents of %s into temp file %s",
-							rootFileObject, tmpFile));
-
-					rootFileObject.copyTo(fos);
-				}
-
-				IOUtils.closeQuietly(fos);
-
-				/**
-				 * Sets Vars
-				 */
-				keyPrefix = strip(Util.replaceMacro(keyPrefix, env));
-				bucketName = strip(Util.replaceMacro(bucketName, env));
-				applicationName = strip(Util.replaceMacro(applicationName, env));
-				String versionLabel = strip(Util.replaceMacro(versionLabelFormat, env));
-
-				String objectKey = String.format("%s/%s-%s.zip", keyPrefix,
-						applicationName, versionLabel);
-
-				String s3ObjectPath = String
-						.format("s3://%s/%s", bucketName, objectKey);
-
-				{
-					w.println(String.format("Uploading file %s as %s", tmpFile,
-							s3ObjectPath));
-
-					s3.putObject(bucketName, objectKey, tmpFile);
-				}
-
-				{
-					w.println(String
-							.format("Creating application version %s for application %s for path %s",
-									versionLabel, applicationName, s3ObjectPath));
-
-					CreateApplicationVersionRequest cavRequest = new CreateApplicationVersionRequest()
-							.withApplicationName(applicationName)
-							.withAutoCreateApplication(true)
-							.withSourceBundle(new S3Location(bucketName, objectKey))
-							.withVersionLabel(versionLabel);
-					awseb.createApplicationVersion(cavRequest);
-				}
-
-				{
-					DescribeEnvironmentsResult environments = awseb
-							.describeEnvironments(new DescribeEnvironmentsRequest()
-									.withApplicationName(applicationName)
-									.withEnvironmentNames(environmentName));
-
-					boolean found = (1 == environments.getEnvironments().size());
-
-					if (found) {
-						for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
-
-							String environmentId = environments.getEnvironments()
-									.get(0).getEnvironmentId();
-
-							w.println(String.format("Attempt %d/%s", nAttempt,
-									MAX_ATTEMPTS));
-
-							w.println(String
-									.format("Environment found (environment id=%s). Attempting to update environment to version label %s",
-											environmentId, versionLabel));
-
-							UpdateEnvironmentRequest uavReq = new UpdateEnvironmentRequest()
-									.withEnvironmentName(environmentName)
-									.withVersionLabel(versionLabel);
-
-							try {
-								awseb.updateEnvironment(uavReq);
-
-								w.println("q'Apla!");
-
-								listener.finished(Result.SUCCESS);
-
-								return null;
-							} catch (Exception exc) {
-								w.println("Problem: " + exc.getMessage());
-
-								if (nAttempt == MAX_ATTEMPTS) {
-									w.println("Giving it up");
-
-									listener.fatalError(exc.getMessage());
-									listener.finished(Result.FAILURE);
-
-									throw exc;
-								}
-
-								w.println(String.format(
-										"Reattempting in 90s, up to %d", MAX_ATTEMPTS));
-
-								Thread.sleep(TimeUnit.SECONDS.toMillis(90));
-							}
-						}
-					} else {
-						w.println("Environment not found. Continuing");
-						listener.finished(Result.SUCCESS);
-					}
-				}
-
-				return null;
-			}
-		});
+		rootFileObject.act(new DeployerUnit(build, listener, rootFileObject));
 
 
 	}
