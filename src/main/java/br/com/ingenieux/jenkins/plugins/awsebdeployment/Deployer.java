@@ -159,18 +159,14 @@ public class Deployer {
 		this.versionLabel = getValue(descriptorImpl.getVersionLabelFormat());
 		this.environmentName = getValue(descriptorImpl.getEnvironmentName());
 
-		objectKey = String.format("%s/%s-%s.zip", keyPrefix, applicationName,
+		objectKey = formatPath("%s/%s-%s.zip", keyPrefix, applicationName,
 				versionLabel);
 
-		s3ObjectPath = String.format("s3://%s/%s", bucketName, objectKey);
+		s3ObjectPath = formatPath("s3://%s/%s", bucketName, objectKey);
 
 		log("Uploading file %s as %s", localArchive.getName(), s3ObjectPath);
 
 		s3.putObject(bucketName, objectKey, localArchive);
-	}
-
-	private String getValue(String value) {
-		return Util.replaceMacro(value, env);
 	}
 
 	private void initAWS() {
@@ -216,6 +212,14 @@ public class Deployer {
 		}
 
 		return resultFile;
+	}
+
+	private String formatPath(String mask, Object... args) {
+		return strip(String.format(mask, args).replaceAll("/{2.}", ""));
+	}
+
+	private String getValue(String value) {
+		return strip(Util.replaceMacro(value, env));
 	}
 
 	private static String strip(String str) {
