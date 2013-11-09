@@ -215,7 +215,7 @@ public class Deployer {
 	}
 
 	private String formatPath(String mask, Object... args) {
-		return strip(String.format(mask, args).replaceAll("/{2.}", ""));
+		return strip(String.format(mask, args).replaceAll("/{2,}", ""));
 	}
 
 	private String getValue(String value) {
