@@ -37,8 +37,8 @@ import com.amazonaws.services.s3.AmazonS3Client;
 public class Deployer {
 	private static final int MAX_ATTEMPTS = 15;
 
-	private AWSEBDeploymentPublisher builder;
-
+	private AWSEBDeploymentPublisher context;
+	
 	private PrintStream logger;
 
 	private AmazonS3 s3;
@@ -69,13 +69,13 @@ public class Deployer {
 
 	public Deployer(AWSEBDeploymentPublisher builder,
 			AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-		this.builder = builder;
+		this.context = builder;
 		this.logger = listener.getLogger();
 		this.env = build.getEnvironment(listener);
 		this.listener = listener;
 		
 		this.rootFileObject = new FilePath(build.getWorkspace(),
-				strip(builder.getRootObject()));
+				strip(context.getRootObject()));
 	}
 
 	public void perform() throws Exception {
@@ -153,16 +153,16 @@ public class Deployer {
 	}
 
 	private void uploadArchive() {
-		this.keyPrefix = getValue(builder.getKeyPrefix());
-		this.bucketName = getValue(builder.getBucketName());
-		this.applicationName = getValue(builder.getApplicationName());
-		this.versionLabel = getValue(builder.getVersionLabelFormat());
-		this.environmentName = getValue(builder.getEnvironmentName());
+		this.keyPrefix = getValue(context.getKeyPrefix());
+		this.bucketName = getValue(context.getBucketName());
+		this.applicationName = getValue(context.getApplicationName());
+		this.versionLabel = getValue(context.getVersionLabelFormat());
+		this.environmentName = getValue(context.getEnvironmentName());
 
 		objectKey = formatPath("%s/%s-%s.zip", keyPrefix, applicationName,
 				versionLabel);
 
-		s3ObjectPath = formatPath("s3://%s/%s", bucketName, objectKey);
+		s3ObjectPath = "s3://" + formatPath("%s/%s", bucketName, objectKey);
 
 		log("Uploading file %s as %s", localArchive.getName(), s3ObjectPath);
 
@@ -171,14 +171,14 @@ public class Deployer {
 
 	private void initAWS() {
 		log("Creating S3 and AWSEB Client (AWS Access Key Id: %s, region: %s)",
-				builder.getAwsAccessKeyId(),
-				builder.getAwsRegion());
+				context.getAwsAccessKeyId(),
+				context.getAwsRegion());
 
 		AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
 				new StaticCredentialsProvider(new BasicAWSCredentials(
-						builder.getAwsAccessKeyId(),
-						builder.getAwsSecretSharedKey())));
-		Region region = Region.getRegion(Regions.fromName(builder
+						context.getAwsAccessKeyId(),
+						context.getAwsSecretSharedKey())));
+		Region region = Region.getRegion(Regions.fromName(context
 				.getAwsRegion()));
 		ClientConfiguration clientConfig = new ClientConfiguration();
 
@@ -204,11 +204,11 @@ public class Deployer {
 		} else {
 			log("Zipping contents of Root File Object (%s) into tmp file %s (includes=%s, excludes=%s)",
 					rootFileObject.getName(), resultFile.getName(),
-					builder.getIncludes(), builder.getExcludes());
+					context.getIncludes(), context.getExcludes());
 
 			rootFileObject.zip(new FileOutputStream(resultFile),
-					new DirScanner.Glob(builder.getIncludes(),
-							builder.getExcludes()));
+					new DirScanner.Glob(context.getIncludes(),
+							context.getExcludes()));
 		}
 
 		return resultFile;
