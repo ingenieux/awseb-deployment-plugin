@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentBuilder.DescriptorImpl;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
@@ -37,7 +39,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 public class Deployer {
 	private static final int MAX_ATTEMPTS = 15;
 
-	private AWSEBDeploymentDescriptorImpl descriptorImpl;
+	private DescriptorImpl descriptorImpl;
 
 	private PrintStream logger;
 
@@ -67,7 +69,7 @@ public class Deployer {
 
 	private BuildListener listener;
 
-	public Deployer(AWSEBDeploymentDescriptorImpl descriptorImpl,
+	public Deployer(DescriptorImpl descriptorImpl,
 			AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		this.descriptorImpl = descriptorImpl;
 		this.logger = listener.getLogger();
