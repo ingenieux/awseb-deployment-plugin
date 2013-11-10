@@ -31,10 +31,10 @@
     <f:textbox />
   </f:entry>
   <f:entry title="Includes" field="includes">
-    <f:textarea />
+    <f:textbox />
   </f:entry>
   <f:entry title="Excludes" field="excludes">
-    <f:textarea />
+    <f:textbox />
   </f:entry>
   <f:entry title="Version Label Format" field="versionLabelFormat">
     <f:textbox />
