@@ -17,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentBuilder.DescriptorImpl;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
@@ -39,7 +37,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 public class Deployer {
 	private static final int MAX_ATTEMPTS = 15;
 
-	private DescriptorImpl descriptorImpl;
+	private AWSEBDeploymentPublisher builder;
 
 	private PrintStream logger;
 
@@ -69,15 +67,15 @@ public class Deployer {
 
 	private BuildListener listener;
 
-	public Deployer(DescriptorImpl descriptorImpl,
+	public Deployer(AWSEBDeploymentPublisher builder,
 			AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-		this.descriptorImpl = descriptorImpl;
+		this.builder = builder;
 		this.logger = listener.getLogger();
 		this.env = build.getEnvironment(listener);
 		this.listener = listener;
 		
 		this.rootFileObject = new FilePath(build.getWorkspace(),
-				strip(descriptorImpl.getRootObject()));
+				strip(builder.getRootObject()));
 	}
 
 	public void perform() throws Exception {
@@ -155,11 +153,11 @@ public class Deployer {
 	}
 
 	private void uploadArchive() {
-		this.keyPrefix = getValue(descriptorImpl.getKeyPrefix());
-		this.bucketName = getValue(descriptorImpl.getBucketName());
-		this.applicationName = getValue(descriptorImpl.getApplicationName());
-		this.versionLabel = getValue(descriptorImpl.getVersionLabelFormat());
-		this.environmentName = getValue(descriptorImpl.getEnvironmentName());
+		this.keyPrefix = getValue(builder.getKeyPrefix());
+		this.bucketName = getValue(builder.getBucketName());
+		this.applicationName = getValue(builder.getApplicationName());
+		this.versionLabel = getValue(builder.getVersionLabelFormat());
+		this.environmentName = getValue(builder.getEnvironmentName());
 
 		objectKey = formatPath("%s/%s-%s.zip", keyPrefix, applicationName,
 				versionLabel);
@@ -173,14 +171,14 @@ public class Deployer {
 
 	private void initAWS() {
 		log("Creating S3 and AWSEB Client (AWS Access Key Id: %s, region: %s)",
-				descriptorImpl.getAwsAccessKeyId(),
-				descriptorImpl.getAwsRegion());
+				builder.getAwsAccessKeyId(),
+				builder.getAwsRegion());
 
 		AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(
 				new StaticCredentialsProvider(new BasicAWSCredentials(
-						descriptorImpl.getAwsAccessKeyId(),
-						descriptorImpl.getAwsSecretSharedKey())));
-		Region region = Region.getRegion(Regions.fromName(descriptorImpl
+						builder.getAwsAccessKeyId(),
+						builder.getAwsSecretSharedKey())));
+		Region region = Region.getRegion(Regions.fromName(builder
 				.getAwsRegion()));
 		ClientConfiguration clientConfig = new ClientConfiguration();
 
@@ -206,11 +204,11 @@ public class Deployer {
 		} else {
 			log("Zipping contents of Root File Object (%s) into tmp file %s (includes=%s, excludes=%s)",
 					rootFileObject.getName(), resultFile.getName(),
-					descriptorImpl.getIncludes(), descriptorImpl.getExcludes());
+					builder.getIncludes(), builder.getExcludes());
 
 			rootFileObject.zip(new FileOutputStream(resultFile),
-					new DirScanner.Glob(descriptorImpl.getIncludes(),
-							descriptorImpl.getExcludes()));
+					new DirScanner.Glob(builder.getIncludes(),
+							builder.getExcludes()));
 		}
 
 		return resultFile;
