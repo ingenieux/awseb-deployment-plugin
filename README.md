@@ -23,6 +23,4 @@ Enjoy
 
 # Gotchas and Todo
 
-  * Environment Update hasn't been very tested
   * No validation is performed
-  * Doesn't do include/excludes
