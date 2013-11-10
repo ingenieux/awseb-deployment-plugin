@@ -37,7 +37,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 public class Deployer {
 	private static final int MAX_ATTEMPTS = 15;
 
-	private AWSEBDeploymentPublisher context;
+	private AWSEBDeploymentBuilder context;
 	
 	private PrintStream logger;
 
@@ -67,7 +67,7 @@ public class Deployer {
 
 	private BuildListener listener;
 
-	public Deployer(AWSEBDeploymentPublisher builder,
+	public Deployer(AWSEBDeploymentBuilder builder,
 			AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		this.context = builder;
 		this.logger = listener.getLogger();
@@ -103,7 +103,6 @@ public class Deployer {
 
 		if (found) {
 			for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
-
 				String environmentId = environments.getEnvironments().get(0)
 						.getEnvironmentId();
 
@@ -120,6 +119,8 @@ public class Deployer {
 					awseb.updateEnvironment(uavReq);
 
 					log("q'Apla!");
+					
+					return;
 				} catch (Exception exc) {
 					log("Problem: " + exc.getMessage());
 

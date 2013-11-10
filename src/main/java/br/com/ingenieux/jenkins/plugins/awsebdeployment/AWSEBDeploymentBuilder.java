@@ -9,8 +9,6 @@ import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
-import hudson.tasks.Notifier;
-import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 
 import java.io.IOException;
@@ -27,9 +25,9 @@ import org.kohsuke.stapler.StaplerRequest;
  * AWS Elastic Beanstalk Deployment
  */
 @SuppressWarnings({ "unchecked" })
-public class AWSEBDeploymentPublisher extends Builder implements BuildStep {
+public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	@DataBoundConstructor
-	public AWSEBDeploymentPublisher(String awsAccessKeyId,
+	public AWSEBDeploymentBuilder(String awsAccessKeyId,
 			String awsSecretSharedKey, String awsRegion,
 			String applicationName, String environmentName, String bucketName,
 			String keyPrefix, String versionLabelFormat, String rootObject,
