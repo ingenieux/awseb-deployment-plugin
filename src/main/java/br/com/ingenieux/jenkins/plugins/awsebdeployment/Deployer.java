@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
@@ -101,6 +102,8 @@ public class Deployer {
 
 	public void perform() throws Exception {
 		initAWS();
+		
+		log("Running Version %s", getVersion());
 
 		localArchive = getLocalFileObject(rootFileObject);
 
@@ -204,12 +207,31 @@ public class Deployer {
 				.getAwsRegion()));
 		ClientConfiguration clientConfig = new ClientConfiguration();
 
-		clientConfig.setUserAgent("ingenieux CloudButler/version");
+		clientConfig.setUserAgent("ingenieux CloudButler/" + getVersion());
 
 		s3 = region.createClient(AmazonS3Client.class, credentials,
 				clientConfig);
 		awseb = region.createClient(AWSElasticBeanstalkClient.class,
 				credentials, clientConfig);
+	}
+	
+	private static String VERSION = "UNKNOWN";
+
+	private static String getVersion() {
+		if ("UNKNOWN".equals(VERSION)) {
+			try {
+				Properties p = new Properties();
+				
+				p.load(Deployer.class.getResourceAsStream("version.properties"));
+				
+				VERSION = p.getProperty("awseb-deployer-plugin.version");
+				
+			} catch (Exception exc) {
+				throw new RuntimeException(exc);
+			}
+		}
+
+		return VERSION;
 	}
 
 	void log(String mask, Object... args) {
