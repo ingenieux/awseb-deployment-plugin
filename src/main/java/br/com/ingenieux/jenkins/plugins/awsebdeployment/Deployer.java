@@ -97,7 +97,7 @@ public class Deployer {
 		this.listener = listener;
 		
 		this.rootFileObject = new FilePath(build.getWorkspace(),
-				strip(context.getRootObject()));
+				getValue(context.getRootObject()));
 	}
 
 	public void perform() throws Exception {
