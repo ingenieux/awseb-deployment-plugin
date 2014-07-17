@@ -52,7 +52,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 			String awsSecretSharedKey, String awsRegion,
 			String applicationName, String environmentName, String bucketName,
 			String keyPrefix, String versionLabelFormat, String rootObject,
-			String includes, String excludes) {
+			String includes, String excludes, boolean deployOptOut) {
 		super();
 		this.awsAccessKeyId = awsAccessKeyId;
 		this.awsSecretSharedKey = awsSecretSharedKey;
@@ -65,6 +65,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 		this.rootObject = rootObject;
 		this.includes = includes;
 		this.excludes = excludes;
+		this.deployOptOut = deployOptOut;
 	}
 
 	/**
@@ -197,6 +198,16 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	public void setExcludes(String excludes) {
 		this.excludes = excludes;
 	}
+
+	private boolean deployOptOut;
+
+    public boolean getDeployOptOut() {
+    	return deployOptOut;
+    }
+
+    public void setDeployOptOut(boolean deployOptOut) {
+    	this.deployOptOut = deployOptOut;
+    }
 
 	@Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
@@ -366,6 +377,15 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     		this.excludes = excludes;
     	}
 
+		private boolean deployOptOut;
+
+		public boolean getDeployOptOut() {
+			return deployOptOut;
+		}
+
+		public void setDeployOptOut(boolean deployOptOut) {
+			this.deployOptOut = deployOptOut;
+		}
 
         /**
          * In order to load the persisted global configuration, you have to 

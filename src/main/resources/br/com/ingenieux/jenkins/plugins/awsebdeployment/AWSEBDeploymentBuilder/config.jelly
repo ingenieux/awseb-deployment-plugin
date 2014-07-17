@@ -42,4 +42,7 @@
   <f:entry title="Environment Name" field="environmentName">
     <f:textbox />
   </f:entry>
+  <f:entry title="Do not deploy to awseb" field="deployOptOut">
+    <f:checkbox />
+  </f:entry>
 </j:jelly>

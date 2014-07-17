@@ -111,7 +111,9 @@ public class Deployer {
 
 		createApplicationVersion();
 
-		updateEnvironments();
+		if (!context.getDeployOptOut()) {
+			updateEnvironments();
+		}
 
 		listener.finished(Result.SUCCESS);
 
