@@ -42,14 +42,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import com.amazonaws.regions.Regions;
+
 /**
  * AWS Elastic Beanstalk Deployment
  */
-@SuppressWarnings({ "unchecked" })
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	@DataBoundConstructor
 	public AWSEBDeploymentBuilder(String awsAccessKeyId,
-			String awsSecretSharedKey, String awsRegion,
+			String awsSecretSharedKey, Regions awsRegion,
 			String applicationName, String environmentName, String bucketName,
 			String keyPrefix, String versionLabelFormat, String rootObject,
 			String includes, String excludes) {
@@ -96,16 +97,16 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	/**
 	 * AWS Region
 	 */
-	private String awsRegion;
+	private Regions awsRegion;
 
-	public String getAwsRegion() {
+	public Regions getAwsRegion() {
 		return awsRegion;
 	}
 
-	public void setAwsRegion(String awsRegion) {
+	public void setAwsRegion(Regions awsRegion) {
 		this.awsRegion = awsRegion;
 	}
-
+	
 	/**
 	 * Application Name
 	 */

@@ -16,7 +16,9 @@
     <f:textbox />
   </f:entry>
   <f:entry title="AWS Region" field="awsRegion">
-    <f:textbox />
+    <f:enum field="awsRegion">
+    	${it.getName()}
+    </f:enum>
   </f:entry>
   <f:entry title="Application Name" field="applicationName">
     <f:textbox />
