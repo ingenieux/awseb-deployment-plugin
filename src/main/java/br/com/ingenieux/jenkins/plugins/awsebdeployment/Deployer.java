@@ -203,8 +203,7 @@ public class Deployer {
 				new StaticCredentialsProvider(new BasicAWSCredentials(
 						context.getAwsAccessKeyId(),
 						context.getAwsSecretSharedKey())));
-		Region region = Region.getRegion(Regions.fromName(context
-				.getAwsRegion()));
+		Region region = Region.getRegion(context.getAwsRegion());
 		ClientConfiguration clientConfig = new ClientConfiguration();
 
 		clientConfig.setUserAgent("ingenieux CloudButler/" + getVersion());
