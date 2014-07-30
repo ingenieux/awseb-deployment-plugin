@@ -21,14 +21,6 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
  */
 
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -39,16 +31,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.CopyOnWriteList;
-import hudson.util.FormValidation;
-
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-
-import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -284,24 +268,6 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         
         public DescriptorImpl() {
             load();
-        }
-
-        public FormValidation doCheck(@QueryParameter String name, @QueryParameter String awsAccessKeyId, @QueryParameter String awsSecretSharedKey) throws IOException, ServletException {
-            if(name == null || name.isEmpty()) {
-                return FormValidation.error("name can't be empty");
-            }
-            
-            try {
-                BasicAWSCredentials basicAWSCredentials = new BasicAWSCredentials(awsAccessKeyId, awsSecretSharedKey);
-                AWSCredentialsProvider credentials = new AWSCredentialsProviderChain(new StaticCredentialsProvider(basicAWSCredentials));
-                Region region = Region.getRegion(Regions.DEFAULT_REGION);
-                AmazonS3Client s3 = region.createClient(AmazonS3Client.class, credentials, new ClientConfiguration());
-
-                s3.listBuckets();
-            } catch (Exception e) {
-                return FormValidation.error(e, "bad credentials");
-            }
-            return FormValidation.ok();
         }
 
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {

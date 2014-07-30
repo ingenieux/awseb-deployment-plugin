@@ -17,8 +17,6 @@
                     <f:textbox name="credential.awsSecretSharedKey" value="${credential.awsSecretSharedKey}"/>
                 </f:entry>
                 
-                <f:validateButton method="check" title="Check" progress="Checking..." with="name,awsAccessKeyId,awsSecretSharedKey"/>
-                
                 <f:entry title="">
                     <div align="right">
                     <f:repeatableDeleteButton value="Delete"/>
