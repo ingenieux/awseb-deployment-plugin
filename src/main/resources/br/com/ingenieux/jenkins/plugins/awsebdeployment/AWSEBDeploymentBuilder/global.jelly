@@ -1,20 +1,30 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <!--
-    This Jelly script is used to produce the global configuration option.
 
-    Jenkins uses a set of tag libraries to provide uniformity in forms.
-    To determine where this tag is defined, first check the namespace URI,
-    and then look under $JENKINS/views/. For example, <f:section> is defined
-    in $JENKINS/views/lib/form/section.jelly.
-
-    It's also often useful to just check other similar scripts to see what
-    tags they use. Views are always organized according to its owner class,
-    so it should be straightforward to find them.
-  <f:section title="Hello World Builder">
-    <f:entry title="French" field="useFrench"
-      description="Check if we should say hello in French">
-      <f:checkbox />
+<f:section title="Deploy into AWS Elastic Beanstalk">
+    <f:entry title="Credentials">
+        <f:repeatable var="credential" items="${descriptor.credentials}" add="Add" header="AWS credentials">
+            <table width="100%">
+                
+                <f:entry title="Name">
+                    <f:textbox name="credential.name" value="${credential.name}"/>
+                </f:entry>
+                
+                <f:entry title="AWS Access Key Id">
+                    <f:textbox name="credential.awsAccessKeyId" value="${credential.awsAccessKeyId}"/>
+                </f:entry>
+                
+                <f:entry title="AWS Secret Shared Key">
+                    <f:textbox name="credential.awsSecretSharedKey" value="${credential.awsSecretSharedKey}"/>
+                </f:entry>
+                
+                <f:entry title="">
+                    <div align="right">
+                    <f:repeatableDeleteButton value="Delete"/>
+                    </div>
+                </f:entry>
+            </table>
+        </f:repeatable>
     </f:entry>
-  </f:section>
-  -->
+</f:section>
+
 </j:jelly>

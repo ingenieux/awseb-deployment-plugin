@@ -30,16 +30,9 @@ import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
-import hudson.util.FormValidation;
-
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-
-import net.sf.json.JSONObject;
+import hudson.util.CopyOnWriteList;
 
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -47,15 +40,14 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 @SuppressWarnings({ "unchecked" })
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
-	@DataBoundConstructor
-	public AWSEBDeploymentBuilder(String awsAccessKeyId,
-			String awsSecretSharedKey, String awsRegion,
+    @DataBoundConstructor
+	public AWSEBDeploymentBuilder(String credentialsName,
+			String awsRegion,
 			String applicationName, String environmentName, String bucketName,
 			String keyPrefix, String versionLabelFormat, String rootObject,
 			String includes, String excludes) {
 		super();
-		this.awsAccessKeyId = awsAccessKeyId;
-		this.awsSecretSharedKey = awsSecretSharedKey;
+        this.credentialsName = credentialsName;
 		this.awsRegion = awsRegion;
 		this.applicationName = applicationName;
 		this.environmentName = environmentName;
@@ -68,32 +60,18 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	}
 
 	/**
-	 * Access Key Id
+	 * Credentials name
 	 */
-	private String awsAccessKeyId;
+	private String credentialsName;
+    
+    /**
+     * AWS credentials name
+     */
+    public String getCredentialsName() {
+        return credentialsName;
+    }
 
-	public String getAwsAccessKeyId() {
-		return awsAccessKeyId;
-	}
-
-	public void setAwsAccessKeyId(String awsAccessKeyId) {
-		this.awsAccessKeyId = awsAccessKeyId;
-	}
-
-	/**
-	 * Secret Shared Key
-	 */
-	private String awsSecretSharedKey;
-
-	public String getAwsSecretSharedKey() {
-		return awsSecretSharedKey;
-	}
-
-	public void setAwsSecretSharedKey(String awsSecretSharedKey) {
-		this.awsSecretSharedKey = awsSecretSharedKey;
-	}
-
-	/**
+    /**
 	 * AWS Region
 	 */
 	private String awsRegion;
@@ -221,197 +199,90 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     // you don't have to do this.
     @SuppressWarnings("rawtypes")
 	@Override
-    public BuildStepDescriptor getDescriptor() {
+    public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
     }
 
-    /**
-     * Descriptor for {@link HelloWorldBuilder}. Used as a singleton.
-     * The class is marked as public so that it can be accessed from views.
-     *
-     * <p>
-     * See <tt>src/main/resources/hudson/plugins/hello_world/HelloWorldBuilder/*.jelly</tt>
-     * for the actual HTML fragment for the configuration screen.
-     */
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
+    public String getAwsAccessKeyId() {
+        return getCredentials().getAwsAccessKeyId();
+    }
+
+    public String getAwsSecretSharedKey() {
+        return getCredentials().getAwsSecretSharedKey();
+    }
+    
+    protected DescriptorImpl.AwsCredentials getCredentials() {
+        DescriptorImpl.AwsCredentials[] credentials = getDescriptor().getCredentials();
+
+        if (credentialsName == null && credentials.length > 0)
+            // default
+            return credentials[0];
+
+        for (DescriptorImpl.AwsCredentials credential : credentials) {
+            if (credential.getName().equals(credentialsName))
+                return credential;
+        }
+        
+        return null;
+    }
+
+    @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-    	/**
-    	 * Access Key Id
-    	 */
-    	private String awsAccessKeyId;
 
-    	public String getAwsAccessKeyId() {
-    		return awsAccessKeyId;
-    	}
+        public static class AwsCredentials {
+            private final String name;
+            private final String awsAccessKeyId;
+            private final String awsSecretSharedKey;
 
-    	public void setAwsAccessKeyId(String awsAccessKeyId) {
-    		this.awsAccessKeyId = awsAccessKeyId;
-    	}
+            public String getName() {
+                return name;
+            }
 
-    	/**
-    	 * Secret Shared Key
-    	 */
-    	private String awsSecretSharedKey;
+            public String getAwsAccessKeyId() {
+                return awsAccessKeyId;
+            }
 
-    	public String getAwsSecretSharedKey() {
-    		return awsSecretSharedKey;
-    	}
+            public String getAwsSecretSharedKey() {
+                return awsSecretSharedKey;
+            }
 
-    	public void setAwsSecretSharedKey(String awsSecretSharedKey) {
-    		this.awsSecretSharedKey = awsSecretSharedKey;
-    	}
+            public AwsCredentials() {
+                name = null;
+                awsAccessKeyId = null;
+                awsSecretSharedKey = null;
+            }
 
-    	/**
-    	 * AWS Region
-    	 */
-    	private String awsRegion;
+            @DataBoundConstructor
+            public AwsCredentials(String name, String awsAccessKeyId, String awsSecretSharedKey) {
+                this.name = name;
+                this.awsAccessKeyId = awsAccessKeyId;
+                this.awsSecretSharedKey = awsSecretSharedKey;
+            }
+        }
+        
+        private final CopyOnWriteList<AwsCredentials> credentials = new CopyOnWriteList<AwsCredentials>();
 
-    	public String getAwsRegion() {
-    		return awsRegion;
-    	}
-
-    	public void setAwsRegion(String awsRegion) {
-    		this.awsRegion = awsRegion;
-    	}
-
-    	/**
-    	 * Application Name
-    	 */
-    	private String applicationName;
-
-    	public String getApplicationName() {
-    		return applicationName;
-    	}
-
-    	public void setApplicationName(String applicationName) {
-    		this.applicationName = applicationName;
-    	}
-
-    	/**
-    	 * Environment Name
-    	 */
-    	private String environmentName;
-
-    	public String getEnvironmentName() {
-    		return environmentName;
-    	}
-
-    	public void setEnvironmentName(String environmentName) {
-    		this.environmentName = environmentName;
-    	}
-
-    	/**
-    	 * Bucket Name
-    	 */
-    	private String bucketName;
-
-    	public String getBucketName() {
-    		return bucketName;
-    	}
-
-    	public void setBucketName(String bucketName) {
-    		this.bucketName = bucketName;
-    	}
-
-    	/**
-    	 * Key Format
-    	 */
-    	private String keyPrefix;
-
-    	public String getKeyPrefix() {
-    		return keyPrefix;
-    	}
-
-    	public void setKeyPrefix(String keyFormat) {
-    		this.keyPrefix = keyFormat;
-    	}
-
-    	private String versionLabelFormat;
-
-    	public String getVersionLabelFormat() {
-    		return versionLabelFormat;
-    	}
-
-    	public void setVersionLabelFormat(String versionLabelFormat) {
-    		this.versionLabelFormat = versionLabelFormat;
-    	}
-
-    	private String rootObject;
-
-    	public String getRootObject() {
-    		return rootObject;
-    	}
-
-    	public void setRootObject(String rootDirectory) {
-    		this.rootObject = rootDirectory;
-    	}
-
-    	private String includes;
-
-    	public String getIncludes() {
-    		return includes;
-    	}
-
-    	public void setIncludes(String includes) {
-    		this.includes = includes;
-    	}
-
-    	private String excludes;
-
-    	public String getExcludes() {
-    		return excludes;
-    	}
-
-    	public void setExcludes(String excludes) {
-    		this.excludes = excludes;
-    	}
-
-
-        /**
-         * In order to load the persisted global configuration, you have to 
-         * call load() in the constructor.
-         */
+        public AwsCredentials[] getCredentials() {
+            return credentials.toArray(new AwsCredentials[0]);
+        }
+        
         public DescriptorImpl() {
             load();
         }
 
-        /**
-         * Performs on-the-fly validation of the form field 'name'.
-         *
-         * @param value
-         *      This parameter receives the value that the user has typed.
-         * @return
-         *      Indicates the outcome of the validation. This is sent to the browser.
-         */
-        public FormValidation doCheckName(@QueryParameter String value)
-                throws IOException, ServletException {
-//            if (value.length() == 0)
-//                return FormValidation.error("Please set a name");
-//            if (value.length() < 4)
-//                return FormValidation.warning("Isn't the name too short?");
-            return FormValidation.ok();
-        }
-
-        @SuppressWarnings("rawtypes")
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            // Indicates that this builder can be used with all kinds of project types 
             return true;
         }
 
-        /**
-         * This human readable name is used in the configuration screen.
-         */
         public String getDisplayName() {
-            return "Deploy into AWS Elastic Beanstalk";
+            return "AWS Elastic Beanstalk";
         }
 
         @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            req.bindJSON(this, formData);
-
+        public boolean configure(StaplerRequest req, net.sf.json.JSONObject json) throws FormException {
+            credentials.replaceBy(req.bindParametersToList(AwsCredentials.class, "credential."));
             save();
-
-            return super.configure(req,formData);
+            return true;
         }
     }
 }
