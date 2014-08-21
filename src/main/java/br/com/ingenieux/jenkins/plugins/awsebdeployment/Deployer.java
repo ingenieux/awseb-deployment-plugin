@@ -26,8 +26,6 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
@@ -44,6 +42,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -201,7 +200,9 @@ public class Deployer {
 		s3.putObject(bucketName, objectKey, localArchive);
 	}
 
-	private void initAWS() {
+	private void initAWS()
+            throws InvocationTargetException, NoSuchMethodException, InstantiationException,
+                   IllegalAccessException {
 		log("Creating S3 and AWSEB Client (AWS Access Key Id: %s, region: %s)",
 				context.getAwsAccessKeyId(),
 				context.getAwsRegion());
@@ -210,16 +211,16 @@ public class Deployer {
 				new StaticCredentialsProvider(new BasicAWSCredentials(
 						context.getAwsAccessKeyId(),
 						context.getAwsSecretSharedKey())));
-		Region region = Region.getRegion(Regions.fromName(context
-				.getAwsRegion()));
 		ClientConfiguration clientConfig = new ClientConfiguration();
 
 		clientConfig.setUserAgent("ingenieux CloudButler/" + getVersion());
 
-		s3 = region.createClient(AmazonS3Client.class, credentials,
-				clientConfig);
-		awseb = region.createClient(AWSElasticBeanstalkClient.class,
-				credentials, clientConfig);
+                final AWSClientFactory
+                    awsClientFactory =
+                    new AWSClientFactory(credentials, clientConfig, context.getAwsRegion());
+
+                s3 = awsClientFactory.getService(AmazonS3Client.class);
+                awseb = awsClientFactory.getService(AWSElasticBeanstalkClient.class);
 	}
 
 	private static String VERSION = "UNKNOWN";
