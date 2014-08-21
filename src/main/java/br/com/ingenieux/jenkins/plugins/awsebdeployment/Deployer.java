@@ -21,24 +21,6 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
  */
 
 
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
-import hudson.model.BuildListener;
-import hudson.model.Result;
-import hudson.model.AbstractBuild;
-import hudson.util.DirScanner;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang.StringUtils;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
@@ -56,11 +38,31 @@ import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
+import org.apache.commons.lang.StringUtils;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.model.Result;
+import hudson.util.DirScanner;
+
+import static org.apache.commons.lang.StringUtils.isBlank;
+
 public class Deployer {
 	private static final int MAX_ATTEMPTS = 15;
 
 	private AWSEBDeploymentBuilder context;
-	
+
 	private PrintStream logger;
 
 	private AmazonS3 s3;
@@ -95,14 +97,14 @@ public class Deployer {
 		this.logger = listener.getLogger();
 		this.env = build.getEnvironment(listener);
 		this.listener = listener;
-		
+
 		this.rootFileObject = new FilePath(build.getWorkspace(),
 				getValue(context.getRootObject()));
 	}
 
 	public void perform() throws Exception {
 		initAWS();
-		
+
 		log("Running Version %s", getVersion());
 
 		localArchive = getLocalFileObject(rootFileObject);
@@ -118,6 +120,11 @@ public class Deployer {
 	}
 
 	private void updateEnvironments() throws Exception {
+                if (isBlank(environmentName)) {
+                  log("Skipping update since there's a blank/empty environmentName set");
+                  return;
+                }
+
 		DescribeEnvironmentsResult environments = awseb
 				.describeEnvironments(new DescribeEnvironmentsRequest()
 						.withApplicationName(applicationName)
@@ -143,7 +150,7 @@ public class Deployer {
 					awseb.updateEnvironment(uavReq);
 
 					log("q'Apla!");
-					
+
 					return;
 				} catch (Exception exc) {
 					log("Problem: " + exc.getMessage());
@@ -214,18 +221,18 @@ public class Deployer {
 		awseb = region.createClient(AWSElasticBeanstalkClient.class,
 				credentials, clientConfig);
 	}
-	
+
 	private static String VERSION = "UNKNOWN";
 
 	private static String getVersion() {
 		if ("UNKNOWN".equals(VERSION)) {
 			try {
 				Properties p = new Properties();
-				
+
 				p.load(Deployer.class.getResourceAsStream("version.properties"));
-				
+
 				VERSION = p.getProperty("awseb-deployer-plugin.version");
-				
+
 			} catch (Exception exc) {
 				throw new RuntimeException(exc);
 			}
