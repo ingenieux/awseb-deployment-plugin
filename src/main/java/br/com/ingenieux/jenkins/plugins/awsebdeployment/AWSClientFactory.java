@@ -29,9 +29,20 @@ public class AWSClientFactory {
   public <T> T getService(Class<T> serviceClazz)
       throws NoSuchMethodException, IllegalAccessException,
              InvocationTargetException, InstantiationException {
-    T resultObj = (T) ConstructorUtils
-        .invokeConstructor(serviceClazz, new Object[]{creds, clientConfiguration},
-                           new Class<?>[]{AWSCredentialsProvider.class, ClientConfiguration.class});
+    
+    Class<?> paramTypes[];
+    Object params[];
+    
+    if (isNotBlank(creds.getCredentials().getAWSAccessKeyId()) && isNotBlank(creds.getCredentials().getAWSSecretKey())) {
+      //let the AWS SDK pick credentials from environment or IAM instance role
+      params = new Object[]{clientConfiguration};
+      paramTypes = new Class<?>[]{ClientConfiguration.class};
+    } else {
+      params = new Object[]{creds, clientConfiguration};
+      paramTypes = new Class<?>[]{AWSCredentialsProvider.class, ClientConfiguration.class};
+    }
+    
+    T resultObj = (T) ConstructorUtils.invokeConstructor(serviceClazz, params, paramTypes);
 
     if (isNotBlank(region)) {
       for (ServiceEndpointFormatter formatter : ServiceEndpointFormatter.values()) {
