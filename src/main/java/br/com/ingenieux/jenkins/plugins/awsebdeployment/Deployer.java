@@ -127,7 +127,8 @@ public class Deployer {
 		DescribeEnvironmentsResult environments = awseb
 				.describeEnvironments(new DescribeEnvironmentsRequest()
 						.withApplicationName(applicationName)
-						.withEnvironmentNames(environmentName));
+						.withEnvironmentNames(environmentName)
+						.withIncludeDeleted(false));
 
 		boolean found = (1 == environments.getEnvironments().size());
 
