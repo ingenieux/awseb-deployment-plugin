@@ -32,14 +32,14 @@ public class AWSClientFactory {
     
     Class<?> paramTypes[];
     Object params[];
-    
+
     if (isNotBlank(creds.getCredentials().getAWSAccessKeyId()) && isNotBlank(creds.getCredentials().getAWSSecretKey())) {
-      //let the AWS SDK pick credentials from environment or IAM instance role
-      params = new Object[]{clientConfiguration};
-      paramTypes = new Class<?>[]{ClientConfiguration.class};
+        params = new Object[]{creds, clientConfiguration};
+        paramTypes = new Class<?>[]{AWSCredentialsProvider.class, ClientConfiguration.class};
     } else {
-      params = new Object[]{creds, clientConfiguration};
-      paramTypes = new Class<?>[]{AWSCredentialsProvider.class, ClientConfiguration.class};
+        //let the AWS SDK pick credentials from environment or IAM instance role
+        params = new Object[]{clientConfiguration};
+        paramTypes = new Class<?>[]{ClientConfiguration.class};
     }
     
     T resultObj = (T) ConstructorUtils.invokeConstructor(serviceClazz, params, paramTypes);
