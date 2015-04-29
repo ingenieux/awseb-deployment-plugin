@@ -21,6 +21,8 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
  */
 
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.exception.InvalidEnvironmentsSizeException;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.exception.InvalidParametersException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
@@ -28,24 +30,9 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
-import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
-import com.amazonaws.services.elasticbeanstalk.model.S3Location;
-import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
+import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-
-import org.apache.commons.lang.StringUtils;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -54,13 +41,27 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.util.DirScanner;
+import org.apache.commons.lang.StringUtils;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class Deployer {
-	private static final int MAX_ATTEMPTS = 15;
+    private static final int MAX_ATTEMPTS = 15;
+    private static final int SLEEP_TIME = 90;
 
-	private AWSEBDeploymentBuilder context;
+    private static final String GREEN_HEALTH = "Green";
+
+    private AWSEBDeploymentBuilder context;
 
 	private PrintStream logger;
 
@@ -108,21 +109,31 @@ public class Deployer {
 
 		localArchive = getLocalFileObject(rootFileObject);
 
-		uploadArchive();
+		try {
+            uploadArchive();
+            createApplicationVersion();
 
-		createApplicationVersion();
+            UpdateEnvironmentResult result = updateEnvironment();
+            validateEnvironmentStatus(result);
 
-		updateEnvironments();
+            log("q'Apla!");
 
-		listener.finished(Result.SUCCESS);
+            listener.finished(Result.SUCCESS);
+        } catch (InvalidParametersException e) {
+            log("Skipping update: %s", e.getMessage());
+
+            listener.finished(Result.ABORTED);
+        } catch (InvalidEnvironmentsSizeException e) {
+            log("Environment not found. Continuing");
+            listener.finished(Result.ABORTED);
+        }
 
 	}
 
-	private void updateEnvironments() throws Exception {
-                if (isBlank(environmentName)) {
-                  log("Skipping update since there's a blank/empty environmentName set");
-                  return;
-                }
+	private UpdateEnvironmentResult updateEnvironment() throws Exception {
+        if (isBlank(environmentName)) {
+          throw new InvalidParametersException("Empty/blank environmentName parameter");
+        }
 
 		DescribeEnvironmentsResult environments = awseb
 				.describeEnvironments(new DescribeEnvironmentsRequest()
@@ -130,46 +141,69 @@ public class Deployer {
 						.withEnvironmentNames(environmentName)
 						.withIncludeDeleted(false));
 
-		boolean found = (1 == environments.getEnvironments().size());
+        if (environments.getEnvironments().size() != 1) {
+            throw new InvalidEnvironmentsSizeException();
+        }
 
-		if (found) {
-			for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
-				String environmentId = environments.getEnvironments().get(0)
-						.getEnvironmentId();
+        for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
+            String environmentId = environments.getEnvironments().get(0)
+                    .getEnvironmentId();
 
-				log("Attempt %d/%s", nAttempt, MAX_ATTEMPTS);
+            log("Update attempt %d/%s", nAttempt, MAX_ATTEMPTS);
 
-				log("Environment found (environment id=%s). Attempting to update environment to version label %s",
-						environmentId, versionLabel);
+            log("Environment found (environment id=%s). Attempting to update environment to version label %s",
+                    environmentId, versionLabel);
 
-				UpdateEnvironmentRequest uavReq = new UpdateEnvironmentRequest()
-						.withEnvironmentName(environmentName).withVersionLabel(
-								versionLabel);
+            UpdateEnvironmentRequest uavReq = new UpdateEnvironmentRequest()
+                    .withEnvironmentName(environmentName).withVersionLabel(
+                            versionLabel);
 
-				try {
-					awseb.updateEnvironment(uavReq);
+            try {
+                UpdateEnvironmentResult result = awseb.updateEnvironment(uavReq);
+                log("Environment updated (environment id=%s). Attempting to validate environment status.", environmentId);
 
-					log("q'Apla!");
+                return result;
+            } catch (Exception exc) {
+                log("Problem: " + exc.getMessage());
 
-					return;
-				} catch (Exception exc) {
-					log("Problem: " + exc.getMessage());
+                if (nAttempt == MAX_ATTEMPTS) {
+                    log("Giving it up");
 
-					if (nAttempt == MAX_ATTEMPTS) {
-						log("Giving it up");
+                    throw exc;
+                }
 
-						throw exc;
-					}
+                log("Reattempting in %ds, up to %d", SLEEP_TIME, MAX_ATTEMPTS);
 
-					log("Reattempting in 90s, up to %d", MAX_ATTEMPTS);
+                Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME));
+            }
+        }
 
-					Thread.sleep(TimeUnit.SECONDS.toMillis(90));
-				}
-			}
-		} else {
-			log("Environment not found. Continuing");
-		}
+        throw new Exception();
 	}
+
+    private void validateEnvironmentStatus(UpdateEnvironmentResult result) throws Exception {
+        if (GREEN_HEALTH.equals(result.getHealth())) {
+            return;
+        }
+
+        for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
+            log("Checking health attempt %d/%s", nAttempt, MAX_ATTEMPTS);
+
+            List<EnvironmentDescription> environments = awseb.describeEnvironments(new DescribeEnvironmentsRequest()
+                    .withEnvironmentIds(Arrays.asList(result.getEnvironmentId()))).getEnvironments();
+
+            if (environments.size() != 1) {
+                throw new InvalidEnvironmentsSizeException();
+            }
+
+            EnvironmentDescription environmentDescription = environments.get(0);
+            if (GREEN_HEALTH.equals(environmentDescription.getHealth())) {
+                return;
+            }
+
+            Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME));
+        }
+    }
 
 	private void createApplicationVersion() {
 		log("Creating application version %s for application %s for path %s",
