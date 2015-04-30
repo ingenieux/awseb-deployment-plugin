@@ -89,6 +89,8 @@ public class Deployer {
 
 	private String environmentName;
 
+    private boolean zeroDowntime;
+
 	private BuildListener listener;
 
 	public Deployer(AWSEBDeploymentBuilder builder,
@@ -100,10 +102,12 @@ public class Deployer {
 
 		this.rootFileObject = new FilePath(build.getWorkspace(),
 				getValue(context.getRootObject()));
+        this.zeroDowntime = builder.isZeroDowntime();
 	}
 
 	public void perform() throws Exception {
 		initAWS();
+        //validateParameters();
 
 		log("Running Version %s", getVersion());
 
@@ -111,6 +115,7 @@ public class Deployer {
 
 		try {
             uploadArchive();
+            cloneEnvironment();
             createApplicationVersion();
 
             UpdateEnvironmentResult result = updateEnvironment();
@@ -129,6 +134,10 @@ public class Deployer {
         }
 
 	}
+
+    private void cloneEnvironment() {
+        //
+    }
 
 	private UpdateEnvironmentResult updateEnvironment() throws Exception {
         if (isBlank(environmentName)) {
