@@ -1,56 +1,67 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <!--
-    This jelly script is used for per-project configuration.
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <!--
+      This jelly script is used for per-project configuration.
 
-    See global.jelly for a general discussion about jelly script.
-  -->
+      See global.jelly for a general discussion about jelly script.
+    -->
 
-  <f:entry title="AWS credentials">
-    <select class="setting-input" name="credentialsName">
-      <f:option selected="${s.name==instance.credentialsName}">NONE</f:option>
-      <j:forEach var="s" items="${descriptor.credentials}">
-        <f:option selected="${s.name==instance.credentialsName}">${s.name}</f:option>
-      </j:forEach>
-    </select>
-  </f:entry>
+    <f:section title="AWS Credentials and Region">
+        <f:entry title="${%Credentials}" field="credentialsId">
+            <c:select expressionAllowed="true"/>
+        </f:entry>
 
-  <f:entry title="AWS Region" field="awsRegion">
-    <f:textbox />
-  </f:entry>
+        <f:entry title="AWS Region" field="awsRegion">
+            <f:textbox default="us-east-1"/>
+        </f:entry>
 
-  <f:entry title="Application Name" field="applicationName">
-    <f:textbox />
-  </f:entry>
+        <f:validateButton method="validateCredentials" title="Validate Credentials" with="credentialsId,awsRegion"/>
+    </f:section>
 
-  <f:entry title="S3 Bucket Name" field="bucketName">
-    <f:textbox />
-  </f:entry>
+    <f:section title="Application and Environment">
+        <f:entry title="Application Name" field="applicationName">
+            <f:textbox/>
+        </f:entry>
 
-  <f:entry title="S3 Key Prefix" field="keyPrefix">
-    <f:textbox />
-  </f:entry>
+        <f:entry title="Environment Name" field="environmentName">
+            <f:textbox/>
+        </f:entry>
 
-  <f:entry title="Root Object (File / Directory)" field="rootObject">
-    <f:textbox />
-  </f:entry>
+        <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialsId,awsRegion,applicationName,environmentName"/>
+    </f:section>
 
-  <f:entry title="Includes" field="includes">
-    <f:textbox />
-  </f:entry>
+    <f:section title="Packaging">
+        <f:entry title="Root Object (File / Directory)" field="rootObject">
+            <f:textbox/>
+        </f:entry>
 
-  <f:entry title="Excludes" field="excludes">
-    <f:textbox />
-  </f:entry>
+        <f:entry title="Includes" field="includes">
+            <f:textbox/>
+        </f:entry>
 
-  <f:entry title="Version Label Format" field="versionLabelFormat">
-    <f:textbox />
-  </f:entry>
+        <f:entry title="Excludes" field="excludes">
+            <f:textbox/>
+        </f:entry>
+    </f:section>
 
-  <f:entry title="Environment Name" field="environmentName">
-    <f:textbox />
-  </f:entry>
+    <f:section title="Uploading">
+        <f:entry title="S3 Bucket Name" field="bucketName">
+            <f:textbox/>
+        </f:entry>
 
-  <f:entry title="Zero downtime?" field="zeroDowntime">
-    <f:checkbox />
-  </f:entry>
+        <f:entry title="S3 Key Prefix" field="keyPrefix">
+            <f:textbox/>
+        </f:entry>
+
+        <f:validateButton method="validateUpload" title="Validate Upload" with="credentialsId,awsRegion,applicationName,environmentName"/>
+    </f:section>
+
+    <f:section title="Version and Deployment">
+        <f:entry title="Version Label Format" field="versionLabelFormat">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Zero downtime?" field="zeroDowntime">
+            <f:checkbox/>
+        </f:entry>
+    </f:section>
 </j:jelly>

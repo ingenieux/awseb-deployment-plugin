@@ -11,21 +11,25 @@ import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.FilePath;
 import hudson.model.Result;
+import hudson.security.ACL;
 import hudson.util.DirScanner;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.ArrayUtils;
 
+import javax.security.auth.login.CredentialNotFoundException;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class DeployerChain {
     final DeployerContext c;
@@ -261,23 +265,27 @@ public class DeployerChain {
     }
 
     private void initAWS()
-            throws InvocationTargetException, NoSuchMethodException, InstantiationException,
-            IllegalAccessException {
+            throws Exception {
         AWSCredentialsProvider credentials = new DefaultAWSCredentialsProviderChain();
 
-        if (!"NONE".equals(c.deployerConfig.getCredentialsName())) {
-            log("Creating S3 and AWSEB Client (AWS Access Key Id: %s, region: %s)",
-                    c.deployerConfig.getAwsAccessKeyId(),
-                    c.deployerConfig.getAwsRegion());
+        if (isNotBlank(c.deployerConfig.getCredentialsId())) {
+            List<AmazonWebServicesCredentials> credentialList =
+                    CredentialsProvider.lookupCredentials(
+                            AmazonWebServicesCredentials.class, Jenkins.getInstance(), ACL.SYSTEM,
+                            Collections.<DomainRequirement>emptyList());
 
-            credentials = new AWSCredentialsProviderChain(
-                    new StaticCredentialsProvider(new BasicAWSCredentials(
-                            c.deployerConfig.getAwsAccessKeyId(),
-                            c.deployerConfig.getAwsSecretSharedKey())));
-        } else {
-            log("Creating S3 and AWSEB Client (region: %s)",
-                    c.deployerConfig.getAwsRegion());
+            AmazonWebServicesCredentials cred =
+                    CredentialsMatchers.firstOrNull(credentialList,
+                            CredentialsMatchers.allOf(CredentialsMatchers.withId(c.deployerConfig.getCredentialsId())));
+
+            if (cred == null)
+                throw new CredentialNotFoundException(c.deployerConfig.getCredentialsId());
+
+            credentials = new AWSCredentialsProviderChain(new StaticCredentialsProvider(new BasicAWSCredentials(cred.getCredentials().getAWSAccessKeyId(), cred.getCredentials().getAWSSecretKey())));
         }
+
+        log("Creating S3 and AWSEB Client (region: %s)",
+                c.deployerConfig.getAwsRegion());
 
         ClientConfiguration clientConfig = new ClientConfiguration();
 

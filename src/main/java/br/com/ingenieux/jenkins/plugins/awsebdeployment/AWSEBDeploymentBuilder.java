@@ -21,273 +21,178 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
  */
 
 
+import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsNameProvider;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Item;
+import hudson.security.ACL;
 import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
-import hudson.util.CopyOnWriteList;
-
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * AWS Elastic Beanstalk Deployment
  */
-@SuppressWarnings({ "unchecked" })
+@SuppressWarnings({"unchecked"})
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @DataBoundConstructor
-	public AWSEBDeploymentBuilder(String credentialsName,
-			String awsRegion,
-			String applicationName, String environmentName, String bucketName,
-			String keyPrefix, String versionLabelFormat, String rootObject, boolean zeroDowntime,
-			String includes, String excludes) {
-		super();
-        this.credentialsName = credentialsName;
-		this.awsRegion = awsRegion;
-		this.applicationName = applicationName;
-		this.environmentName = environmentName;
-		this.bucketName = bucketName;
-		this.keyPrefix = keyPrefix;
-		this.versionLabelFormat = versionLabelFormat;
-		this.rootObject = rootObject;
-        this.zeroDowntime = zeroDowntime;
+    public AWSEBDeploymentBuilder(String credentialsId, String awsRegion, String applicationName, String environmentName, String bucketName, String keyPrefix, String versionLabelFormat, String rootObject, String includes, String excludes, boolean zeroDowntime) {
+        this.credentialsId = credentialsId;
+        this.awsRegion = awsRegion;
+        this.applicationName = applicationName;
+        this.environmentName = environmentName;
+        this.bucketName = bucketName;
+        this.keyPrefix = keyPrefix;
+        this.versionLabelFormat = versionLabelFormat;
+        this.rootObject = rootObject;
         this.includes = includes;
-		this.excludes = excludes;
-	}
-
-	/**
-	 * Credentials name
-	 */
-	private String credentialsName;
-    
-    /**
-     * AWS credentials name
-     */
-    public String getCredentialsName() {
-        return credentialsName;
+        this.excludes = excludes;
+        this.zeroDowntime = zeroDowntime;
     }
 
     /**
-	 * AWS Region
-	 */
-	private String awsRegion;
+     * Credentials name
+     */
+    private String credentialsId;
 
-	public String getAwsRegion() {
-		return awsRegion;
-	}
+    /**
+     * AWS Region
+     */
+    private String awsRegion;
 
-	public void setAwsRegion(String awsRegion) {
-		this.awsRegion = awsRegion;
-	}
+    /**
+     * Application Name
+     */
+    private String applicationName;
 
-	/**
-	 * Application Name
-	 */
-	private String applicationName;
+    /**
+     * Environment Name
+     */
+    private String environmentName;
 
-	public String getApplicationName() {
-		return applicationName;
-	}
+    /**
+     * Bucket Name
+     */
+    private String bucketName;
 
-	public void setApplicationName(String applicationName) {
-		this.applicationName = applicationName;
-	}
+    /**
+     * Key Format
+     */
+    private String keyPrefix;
 
-	/**
-	 * Environment Name
-	 */
-	private String environmentName;
+    private String versionLabelFormat;
 
-	public String getEnvironmentName() {
-		return environmentName;
-	}
+    private String rootObject;
 
-	public void setEnvironmentName(String environmentName) {
-		this.environmentName = environmentName;
-	}
+    private String includes;
 
-	/**
-	 * Bucket Name
-	 */
-	private String bucketName;
-
-	public String getBucketName() {
-		return bucketName;
-	}
-
-	public void setBucketName(String bucketName) {
-		this.bucketName = bucketName;
-	}
-
-	/**
-	 * Key Format
-	 */
-	private String keyPrefix;
-
-	public String getKeyPrefix() {
-		return keyPrefix;
-	}
-
-	public void setKeyPrefix(String keyFormat) {
-		this.keyPrefix = keyFormat;
-	}
-
-	private String versionLabelFormat;
-
-	public String getVersionLabelFormat() {
-		return versionLabelFormat;
-	}
-
-	public void setVersionLabelFormat(String versionLabelFormat) {
-		this.versionLabelFormat = versionLabelFormat;
-	}
-
-	private String rootObject;
-
-	public String getRootObject() {
-		return rootObject;
-	}
-
-	public void setRootObject(String rootDirectory) {
-		this.rootObject = rootDirectory;
-	}
-
-	private String includes;
-
-	public String getIncludes() {
-		return includes;
-	}
-
-	public void setIncludes(String includes) {
-		this.includes = includes;
-	}
-
-	private String excludes;
-
-	public String getExcludes() {
-		return excludes;
-	}
-
-	public void setExcludes(String excludes) {
-		this.excludes = excludes;
-	}
+    private String excludes;
 
     private boolean zeroDowntime;
 
-    public void setCredentialsName(String credentialsName) {
-        this.credentialsName = credentialsName;
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+    public String getAwsRegion() {
+        return awsRegion;
+    }
+
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    public String getEnvironmentName() {
+        return environmentName;
+    }
+
+    public String getBucketName() {
+        return bucketName;
+    }
+
+    public String getKeyPrefix() {
+        return keyPrefix;
+    }
+
+    public String getVersionLabelFormat() {
+        return versionLabelFormat;
+    }
+
+    public String getRootObject() {
+        return rootObject;
+    }
+
+    public String getIncludes() {
+        return includes;
+    }
+
+    public String getExcludes() {
+        return excludes;
     }
 
     public boolean isZeroDowntime() {
         return zeroDowntime;
     }
 
-    public void setZeroDowntime(boolean zeroDowntime) {
-        this.zeroDowntime = zeroDowntime;
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
+                           BuildListener listener) {
+        try {
+            DeployerContext deployerContext = new DeployerContext(this, build, launcher, listener);
+
+            DeployerChain deployerChain = new DeployerChain(deployerContext);
+
+            deployerChain.perform();
+
+            return true;
+        } catch (Exception exc) {
+            throw new RuntimeException(exc);
+        }
     }
 
-    @Override
-	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-			BuildListener listener) {
-		try {
-			DeployerContext deployerContext = new DeployerContext(this, build, launcher, listener);
-
-			DeployerChain deployerChain = new DeployerChain(deployerContext);
-
-			deployerChain.perform();
-
-			return true;
-		} catch (Exception exc) {
-			throw new RuntimeException(exc);
-		}
-	}
-
-	public BuildStepMonitor getRequiredMonitorService() {
-		return BuildStepMonitor.NONE;
-	}
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
 
     // Overridden for better type safety.
     // If your plugin doesn't really define any property on Descriptor,
     // you don't have to do this.
     @SuppressWarnings("rawtypes")
-	@Override
+    @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
-    }
-
-    public String getAwsAccessKeyId() {
-        return getCredentials().getAwsAccessKeyId();
-    }
-
-    public String getAwsSecretSharedKey() {
-        return getCredentials().getAwsSecretSharedKey();
-    }
-    
-    protected DescriptorImpl.AwsCredentials getCredentials() {
-        DescriptorImpl.AwsCredentials[] credentials = getDescriptor().getCredentials();
-
-        if (credentialsName == null && credentials.length > 0)
-            // default
-            return credentials[0];
-
-        for (DescriptorImpl.AwsCredentials credential : credentials) {
-            if (credential.getName().equals(credentialsName))
-                return credential;
-        }
-        
-        return null;
+        return (DescriptorImpl) super.getDescriptor();
     }
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-
-        public static class AwsCredentials {
-            private final String name;
-            private final String awsAccessKeyId;
-            private final String awsSecretSharedKey;
-
-            public String getName() {
-                return name;
-            }
-
-            public String getAwsAccessKeyId() {
-                return awsAccessKeyId;
-            }
-
-            public String getAwsSecretSharedKey() {
-                return awsSecretSharedKey;
-            }
-
-            public AwsCredentials() {
-                name = null;
-                awsAccessKeyId = null;
-                awsSecretSharedKey = null;
-            }
-
-            @DataBoundConstructor
-            public AwsCredentials(String name, String awsAccessKeyId, String awsSecretSharedKey) {
-                this.name = name;
-                this.awsAccessKeyId = awsAccessKeyId;
-                this.awsSecretSharedKey = awsSecretSharedKey;
-            }
-        }
-        
-        private final CopyOnWriteList<AwsCredentials> credentials = new CopyOnWriteList<AwsCredentials>();
-
-        public AwsCredentials[] getCredentials() {
-            return credentials.toArray(new AwsCredentials[0]);
-        }
-        
         public DescriptorImpl() {
+
             load();
         }
 
-		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             return true;
         }
 
@@ -295,11 +200,39 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             return "AWS Elastic Beanstalk";
         }
 
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
+            if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
+                return new ListBoxModel();
+            }
+            // when configuring the job, you only want those credentials that are available to ACL.SYSTEM selectable
+            // as we cannot select from a user's credentials unless they are the only user submitting the build
+            // (which we cannot assume) thus ACL.SYSTEM is correct here.
+            List<IdCredentials> credentials = new ArrayList<>();
+
+            credentials.add(new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "NONE", "None", "", ""));
+
+            credentials.addAll(CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+
+            return new Model().withAll(credentials);
+        }
+
+        private final class Model extends AbstractIdCredentialsListBoxModel<Model, IdCredentials> {
+            @Override
+            protected String describe(IdCredentials c) {
+                return CredentialsNameProvider.name(c);
+            }
+        }
+
         @Override
         public boolean configure(StaplerRequest req, net.sf.json.JSONObject json) throws FormException {
-            credentials.replaceBy(req.bindParametersToList(AwsCredentials.class, "credential."));
             save();
+
             return true;
         }
+
+        public FormValidation doValidateCredentials(@QueryParameter("credentialsId") String credentialName, @QueryParameter("awsRegion") String region) throws Exception {
+            return FormValidation.ok("Meh");
+        }
     }
+
 }

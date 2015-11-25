@@ -10,7 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import static org.apache.commons.lang.StringUtils.defaultString;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
-public class AWSClientFactory {
+public class AWSClientFactory implements Constants {
 
     private AWSCredentialsProvider creds;
 
@@ -35,7 +35,7 @@ public class AWSClientFactory {
 
         T resultObj = (T) ConstructorUtils.invokeConstructor(serviceClazz, params, paramTypes);
 
-        if ("us-east-1".equals(defaultString(region, "us-east-1"))) {
+        if (DEFAULT_REGION.equals(defaultString(region, DEFAULT_REGION))) {
             return resultObj;
         } else {
             for (ServiceEndpointFormatter formatter : ServiceEndpointFormatter.values()) {

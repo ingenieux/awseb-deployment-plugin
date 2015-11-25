@@ -32,18 +32,12 @@ import hudson.model.BuildListener;
 import java.io.IOException;
 import java.io.PrintStream;
 
-public class DeployerContext {
-    static final int MAX_ATTEMPTS = 15;
-
-    static final int SLEEP_TIME = 90;
-
-    static final int MAX_ENVIRONMENT_NAME_LENGTH = 23;
-
-    static final String GREEN_HEALTH = "Green";
-
+public class DeployerContext implements Constants {
     final AWSEBDeploymentBuilder deployerConfig;
 
 	final PrintStream logger;
+
+    final Launcher launcher;
 
     AmazonS3 s3;
 
@@ -74,7 +68,8 @@ public class DeployerContext {
 		this.deployerConfig = builder;
 		this.logger = listener.getLogger();
 		this.env = build.getEnvironment(listener);
-		this.listener = listener;
+        this.launcher = launcher;
+        this.listener = listener;
 
 		this.rootFileObject = new FilePath(build.getWorkspace(), Utils.getValue(deployerConfig.getRootObject(), this.env));
 	}
