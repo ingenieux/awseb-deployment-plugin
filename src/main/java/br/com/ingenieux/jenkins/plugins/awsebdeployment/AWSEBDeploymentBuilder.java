@@ -195,9 +195,11 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
 			BuildListener listener) {
 		try {
-			Deployer deployer = new Deployer(this, build, launcher, listener);
+			DeployerContext deployerContext = new DeployerContext(this, build, launcher, listener);
 
-			deployer.perform();
+			DeployerChain deployerChain = new DeployerChain(deployerContext);
+
+			deployerChain.perform();
 
 			return true;
 		} catch (Exception exc) {

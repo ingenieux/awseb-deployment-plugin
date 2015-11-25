@@ -7,39 +7,49 @@
 
   <f:entry title="AWS credentials">
     <select class="setting-input" name="credentialsName">
+      <f:option selected="${s.name==instance.credentialsName}">NONE</f:option>
       <j:forEach var="s" items="${descriptor.credentials}">
         <f:option selected="${s.name==instance.credentialsName}">${s.name}</f:option>
       </j:forEach>
     </select>
   </f:entry>
-    
+
   <f:entry title="AWS Region" field="awsRegion">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Application Name" field="applicationName">
     <f:textbox />
   </f:entry>
+
   <f:entry title="S3 Bucket Name" field="bucketName">
     <f:textbox />
   </f:entry>
+
   <f:entry title="S3 Key Prefix" field="keyPrefix">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Root Object (File / Directory)" field="rootObject">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Includes" field="includes">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Excludes" field="excludes">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Version Label Format" field="versionLabelFormat">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Environment Name" field="environmentName">
     <f:textbox />
   </f:entry>
+
   <f:entry title="Zero downtime?" field="zeroDowntime">
     <f:checkbox />
   </f:entry>

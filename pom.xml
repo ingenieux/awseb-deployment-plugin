@@ -7,103 +7,112 @@
 	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. * See the 
 	License for the specific language governing permissions and * limitations 
 	under the License. * #L% -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.jenkins-ci.plugins</groupId>
-		<artifactId>plugin</artifactId>
-		<version>1.579</version>
-		<!-- which version of Jenkins is this plugin built against? -->
-	</parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.579</version>
+        <!-- which version of Jenkins is this plugin built against? -->
+    </parent>
 
-	<groupId>br.com.ingenieux.jenkins.plugins</groupId>
-	<artifactId>awseb-deployment-plugin</artifactId>
-	<version>0.0.4-SNAPSHOT</version>
-	<packaging>hpi</packaging>
+    <groupId>br.com.ingenieux.jenkins.plugins</groupId>
+    <artifactId>awseb-deployment-plugin</artifactId>
+    <version>0.0.4-SNAPSHOT</version>
+    <packaging>hpi</packaging>
 
-	<name>AWS Elastic Beanstalk Deployment Plugin</name>
-	<url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
+    <name>AWS Elastic Beanstalk Deployment Plugin</name>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
 
-	<licenses>
-		<license>
-			<name>Apache License 2.0</name>
-			<url>http://www.spdx.org/licenses/Apache-2.0</url>
-		</license>
-	</licenses>
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.spdx.org/licenses/Apache-2.0</url>
+        </license>
+    </licenses>
 
-	<inceptionYear>2013</inceptionYear>
+    <inceptionYear>2013</inceptionYear>
 
-	<organization>
-		<name>ingenieux Labs</name>
-		<url>http://www.ingenieux.com.br/</url>
-	</organization>
+    <organization>
+        <name>ingenieux Labs</name>
+        <url>http://www.ingenieux.com.br/</url>
+    </organization>
 
-	<developers>
-		<developer>
-			<id>aldrinleal</id>
-			<name>Aldrin Leal</name>
-		</developer>
-	</developers>
+    <developers>
+        <developer>
+            <id>aldrinleal</id>
+            <name>Aldrin Leal</name>
+        </developer>
+    </developers>
 
-	<build>
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-				<filtering>true</filtering>
-			</resource>
-		</resources>
-		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>1.5</version>
-				<configuration>
-					<licenseName>apache_v2</licenseName>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>1.5</version>
+                <configuration>
+                    <licenseName>apache_v2</licenseName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.2</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
-	<scm>
-		<connection>scm:git:ssh://github.com/jenkinsci/awseb-deployment-plugin.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/jenkinsci/awseb-deployment-plugin.git</developerConnection>
-		<url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
-	</scm>
+    <scm>
+        <connection>scm:git:ssh://github.com/jenkinsci/awseb-deployment-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/awseb-deployment-plugin.git</developerConnection>
+        <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
+    </scm>
 
-	<dependencies>
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
-			<version>1.9.10</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-codec</groupId>
-					<artifactId>commons-codec</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-	</dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.9.10</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
 
-	<!-- get every artifact through repo.jenkins-ci.org, which proxies all the 
-		artifacts that we need -->
-	<repositories>
-		<repository>
-			<id>repo.jenkins-ci.org</id>
-			<url>http://repo.jenkins-ci.org/public/</url>
-		</repository>
-	</repositories>
+    <!-- get every artifact through repo.jenkins-ci.org, which proxies all the
+        artifacts that we need -->
+    <repositories>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </repository>
+    </repositories>
 
-	<pluginRepositories>
-		<pluginRepository>
-			<id>repo.jenkins-ci.org</id>
-			<url>http://repo.jenkins-ci.org/public/</url>
-		</pluginRepository>
-	</pluginRepositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
-	<distributionManagement>
-		<repository>
-			<id>maven.jenkins-ci.org</id>
-			<url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
-		</repository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>maven.jenkins-ci.org</id>
+            <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>
