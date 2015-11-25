@@ -41,6 +41,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.util.DirScanner;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -48,6 +49,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -58,6 +60,7 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 public class Deployer {
     private static final int MAX_ATTEMPTS = 15;
     private static final int SLEEP_TIME = 90;
+    private static final int MAX_ENVIRONMENT_NAME_LENGTH = 23;
 
     private static final String GREEN_HEALTH = "Green";
 
@@ -69,9 +72,7 @@ public class Deployer {
 
 	private AWSElasticBeanstalk awseb;
 
-	private File localArchive;
-
-	private FilePath rootFileObject;
+    private FilePath rootFileObject;
 
 	private String keyPrefix;
 
@@ -89,6 +90,8 @@ public class Deployer {
 
 	private String environmentName;
 
+    private boolean zeroDowntime;
+
 	private BuildListener listener;
 
 	public Deployer(AWSEBDeploymentBuilder builder,
@@ -98,23 +101,37 @@ public class Deployer {
 		this.env = build.getEnvironment(listener);
 		this.listener = listener;
 
-		this.rootFileObject = new FilePath(build.getWorkspace(),
-				getValue(context.getRootObject()));
+		this.rootFileObject = new FilePath(build.getWorkspace(), getValue(context.getRootObject()));
+        this.zeroDowntime = builder.isZeroDowntime();
 	}
 
 	public void perform() throws Exception {
-		initAWS();
+        try {
+            validateParameters();
+            initAWS();
+            String[] environmentNames = generateEnvironmentNames();
 
-		log("Running Version %s", getVersion());
+            log("Running Version %s", getVersion());
 
-		localArchive = getLocalFileObject(rootFileObject);
-
-		try {
             uploadArchive();
-            createApplicationVersion();
+            ApplicationVersionDescription applicationVersion = createApplicationVersion();
+            String environmentId = getEnvironmentId(environmentNames);
 
-            UpdateEnvironmentResult result = updateEnvironment();
-            validateEnvironmentStatus(result);
+            if (zeroDowntime) {
+                String templateName = createConfigurationTemplate(environmentId);
+
+                String clonedEnvironmentId = createEnvironment(applicationVersion.getVersionLabel(), templateName, environmentNames);
+
+                validateEnvironmentStatus(clonedEnvironmentId);
+
+                swapEnvironmentCnames(environmentId, clonedEnvironmentId);
+
+                terminateEnvironment(environmentId);
+            } else {
+                updateEnvironment(environmentId);
+
+                validateEnvironmentStatus(environmentId);
+            }
 
             log("q'Apla!");
 
@@ -122,33 +139,57 @@ public class Deployer {
         } catch (InvalidParametersException e) {
             log("Skipping update: %s", e.getMessage());
 
-            listener.finished(Result.ABORTED);
+            listener.finished(Result.FAILURE);
         } catch (InvalidEnvironmentsSizeException e) {
-            log("Environment not found. Continuing");
-            listener.finished(Result.ABORTED);
+            log("Environment %s/%s not found. Continuing", e.getApplicationName(), e.getEnvironmentName());
+            listener.finished(Result.FAILURE);
         }
 
 	}
 
-	private UpdateEnvironmentResult updateEnvironment() throws Exception {
-        if (isBlank(environmentName)) {
-          throw new InvalidParametersException("Empty/blank environmentName parameter");
+    private void terminateEnvironment(String environmentId) {
+        log("Terminating environment %s", environmentId);
+
+        TerminateEnvironmentRequest request = new TerminateEnvironmentRequest().withEnvironmentId(environmentId);
+
+        awseb.terminateEnvironment(request);
+    }
+
+    private void swapEnvironmentCnames(String environmentId, String clonedEnvironmentId) throws InterruptedException {
+        log("Swapping CNAMEs from environment %s to %s", environmentId, clonedEnvironmentId);
+
+        SwapEnvironmentCNAMEsRequest request = new SwapEnvironmentCNAMEsRequest()
+                .withSourceEnvironmentId(environmentId).withDestinationEnvironmentId(clonedEnvironmentId);
+
+        awseb.swapEnvironmentCNAMEs(request);
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME)); //So the CNAMEs will swap
+    }
+
+    private String createEnvironment(String versionLabel, String templateName, String[] environmentNames) {
+        log("Creating environment based on application %s/%s from version %s and configuration template %s",
+                applicationName, environmentName, versionLabel, templateName);
+
+        String newEnvironmentName = environmentNames[0];
+        for (String environmentName : environmentNames) {
+            try {
+                getEnvironmentId(environmentName);
+            } catch (InvalidEnvironmentsSizeException e) {
+                newEnvironmentName = environmentName;
+
+                break;
+            }
         }
 
-		DescribeEnvironmentsResult environments = awseb
-				.describeEnvironments(new DescribeEnvironmentsRequest()
-						.withApplicationName(applicationName)
-						.withEnvironmentNames(environmentName)
-						.withIncludeDeleted(false));
+        CreateEnvironmentRequest request = new CreateEnvironmentRequest()
+                .withEnvironmentName(newEnvironmentName).withVersionLabel(versionLabel)
+                .withApplicationName(applicationName).withTemplateName(templateName);
 
-        if (environments.getEnvironments().size() != 1) {
-            throw new InvalidEnvironmentsSizeException();
-        }
+        return awseb.createEnvironment(request).getEnvironmentId();
+    }
 
+	private UpdateEnvironmentResult updateEnvironment(String environmentId) throws Exception {
         for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
-            String environmentId = environments.getEnvironments().get(0)
-                    .getEnvironmentId();
-
             log("Update attempt %d/%s", nAttempt, MAX_ATTEMPTS);
 
             log("Environment found (environment id=%s). Attempting to update environment to version label %s",
@@ -181,19 +222,15 @@ public class Deployer {
         throw new Exception();
 	}
 
-    private void validateEnvironmentStatus(UpdateEnvironmentResult result) throws Exception {
-        if (GREEN_HEALTH.equals(result.getHealth())) {
-            return;
-        }
-
+    private void validateEnvironmentStatus(String environmentId) throws Exception {
         for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
-            log("Checking health attempt %d/%s", nAttempt, MAX_ATTEMPTS);
+            log("Checking health of environment %s attempt %d/%s", environmentId, nAttempt, MAX_ATTEMPTS);
 
             List<EnvironmentDescription> environments = awseb.describeEnvironments(new DescribeEnvironmentsRequest()
-                    .withEnvironmentIds(Arrays.asList(result.getEnvironmentId()))).getEnvironments();
+                    .withEnvironmentIds(Arrays.asList(environmentId))).getEnvironments();
 
             if (environments.size() != 1) {
-                throw new InvalidEnvironmentsSizeException();
+                throw new InvalidEnvironmentsSizeException(applicationName, environmentName);
             }
 
             EnvironmentDescription environmentDescription = environments.get(0);
@@ -205,7 +242,32 @@ public class Deployer {
         }
     }
 
-	private void createApplicationVersion() {
+    private String getEnvironmentId(String... environmentNames) throws InvalidEnvironmentsSizeException {
+        DescribeEnvironmentsResult environments = awseb
+                .describeEnvironments(new DescribeEnvironmentsRequest()
+                        .withApplicationName(applicationName)
+                        .withIncludeDeleted(false));
+
+        for (EnvironmentDescription description : environments.getEnvironments()) {
+            if (ArrayUtils.contains(environmentNames, description.getEnvironmentName())) {
+                return description.getEnvironmentId();
+            }
+        }
+
+        throw new InvalidEnvironmentsSizeException(applicationName, environmentNames[0]);
+    }
+
+    private String createConfigurationTemplate(String environmentId) {
+        log("Creating configuration template from application %s with label %s", applicationName, versionLabel);
+
+        CreateConfigurationTemplateRequest request = new CreateConfigurationTemplateRequest()
+                .withEnvironmentId(environmentId).withApplicationName(applicationName)
+                .withTemplateName(versionLabel);
+
+        return awseb.createConfigurationTemplate(request).getTemplateName();
+    }
+
+	private ApplicationVersionDescription createApplicationVersion() {
 		log("Creating application version %s for application %s for path %s",
 				versionLabel, applicationName, s3ObjectPath);
 
@@ -215,16 +277,11 @@ public class Deployer {
 				.withSourceBundle(new S3Location(bucketName, objectKey))
 				.withVersionLabel(versionLabel);
 
-		awseb.createApplicationVersion(cavRequest);
+		return awseb.createApplicationVersion(cavRequest).getApplicationVersion();
 	}
 
-	private void uploadArchive() {
-		this.keyPrefix = getValue(context.getKeyPrefix());
-		this.bucketName = getValue(context.getBucketName());
-		this.applicationName = getValue(context.getApplicationName());
-		this.versionLabel = getValue(context.getVersionLabelFormat());
-		this.environmentName = getValue(context.getEnvironmentName());
-
+	private void uploadArchive() throws Exception {
+        File localArchive = getLocalFileObject(rootFileObject);
 		objectKey = formatPath("%s/%s-%s.zip", keyPrefix, applicationName,
 				versionLabel);
 
@@ -234,6 +291,42 @@ public class Deployer {
 
 		s3.putObject(bucketName, objectKey, localArchive);
 	}
+
+    private void validateParameters() throws InvalidParametersException {
+        this.keyPrefix = getValue(context.getKeyPrefix());
+        this.bucketName = getValue(context.getBucketName());
+        this.applicationName = getValue(context.getApplicationName());
+        this.versionLabel = getValue(context.getVersionLabelFormat());
+        this.environmentName = getValue(context.getEnvironmentName());
+
+        if (isBlank(environmentName)) {
+            throw new InvalidParametersException("Empty/blank environmentName parameter");
+        }
+
+        if (isBlank(applicationName)) {
+            throw new InvalidParametersException("Empty/blank applicationName parameter");
+        }
+
+        if (isBlank(bucketName)) {
+            throw new InvalidParametersException("Empty/blank bucketName parameter");
+        }
+
+        if (isBlank(versionLabel)) {
+            throw new InvalidParametersException("Empty/blank versionLabel parameter");
+        }
+    }
+
+    private String[] generateEnvironmentNames() {
+        List<String> environmentNames = new ArrayList<String>(){{add(environmentName);}};
+        if (zeroDowntime) {
+            String newEnvironmentName = environmentName.length() <= MAX_ENVIRONMENT_NAME_LENGTH - 2 ?
+                    environmentName : environmentName.substring(0, environmentName.length() - 2);
+
+            environmentNames.add(newEnvironmentName + "-2");
+        }
+
+        return environmentNames.toArray(new String[environmentNames.size()]);
+    }
 
 	private void initAWS()
             throws InvocationTargetException, NoSuchMethodException, InstantiationException,

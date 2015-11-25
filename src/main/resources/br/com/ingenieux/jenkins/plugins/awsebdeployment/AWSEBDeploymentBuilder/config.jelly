@@ -40,4 +40,7 @@
   <f:entry title="Environment Name" field="environmentName">
     <f:textbox />
   </f:entry>
+  <f:entry title="Zero downtime?" field="zeroDowntime">
+    <f:checkbox />
+  </f:entry>
 </j:jelly>

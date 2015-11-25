@@ -44,7 +44,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 	public AWSEBDeploymentBuilder(String credentialsName,
 			String awsRegion,
 			String applicationName, String environmentName, String bucketName,
-			String keyPrefix, String versionLabelFormat, String rootObject,
+			String keyPrefix, String versionLabelFormat, String rootObject, boolean zeroDowntime,
 			String includes, String excludes) {
 		super();
         this.credentialsName = credentialsName;
@@ -55,7 +55,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 		this.keyPrefix = keyPrefix;
 		this.versionLabelFormat = versionLabelFormat;
 		this.rootObject = rootObject;
-		this.includes = includes;
+        this.zeroDowntime = zeroDowntime;
+        this.includes = includes;
 		this.excludes = excludes;
 	}
 
@@ -176,7 +177,21 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 		this.excludes = excludes;
 	}
 
-	@Override
+    private boolean zeroDowntime;
+
+    public void setCredentialsName(String credentialsName) {
+        this.credentialsName = credentialsName;
+    }
+
+    public boolean isZeroDowntime() {
+        return zeroDowntime;
+    }
+
+    public void setZeroDowntime(boolean zeroDowntime) {
+        this.zeroDowntime = zeroDowntime;
+    }
+
+    @Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
 			BuildListener listener) {
 		try {
