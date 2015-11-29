@@ -22,14 +22,11 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -42,13 +39,11 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -200,27 +195,16 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             return "AWS Elastic Beanstalk";
         }
 
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
+        public AbstractIdCredentialsListBoxModel<?, ?> doFillCredentialsIdItems(@AncestorInPath Item owner) {
             if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
-                return new ListBoxModel();
+                return new AWSCredentialsListBoxModel();
             }
-            // when configuring the job, you only want those credentials that are available to ACL.SYSTEM selectable
-            // as we cannot select from a user's credentials unless they are the only user submitting the build
-            // (which we cannot assume) thus ACL.SYSTEM is correct here.
-            List<IdCredentials> credentials = new ArrayList<>();
 
-            credentials.add(new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "NONE", "None", "", ""));
+            List<AmazonWebServicesCredentials> creds = CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
 
-            credentials.addAll(CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
-
-            return new Model().withAll(credentials);
-        }
-
-        private final class Model extends AbstractIdCredentialsListBoxModel<Model, IdCredentials> {
-            @Override
-            protected String describe(IdCredentials c) {
-                return CredentialsNameProvider.name(c);
-            }
+            return new AWSCredentialsListBoxModel()
+                    .withEmptySelection()
+                    .withAll(creds);
         }
 
         @Override
@@ -232,6 +216,16 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
         public FormValidation doValidateCredentials(@QueryParameter("credentialsId") String credentialName, @QueryParameter("awsRegion") String region) throws Exception {
             return FormValidation.ok("Meh");
+        }
+    }
+
+    public static class AWSCredentialsListBoxModel extends AbstractIdCredentialsListBoxModel<AWSCredentialsListBoxModel, AmazonWebServicesCredentials> {
+        /**
+         * {@inheritDoc}
+         */
+        @NonNull
+        protected String describe(@NonNull AmazonWebServicesCredentials c) {
+            return CredentialsNameProvider.name(c);
         }
     }
 
