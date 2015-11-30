@@ -6,7 +6,6 @@ import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
 import hudson.FilePath;
-import hudson.model.Result;
 import hudson.util.DirScanner;
 import org.apache.commons.lang.ArrayUtils;
 
@@ -26,7 +25,7 @@ public class DeployerChain {
         this.c = deployerContext;
     }
 
-    public void perform() throws Exception {
+    public boolean perform() throws Exception {
         // TODO: Cleanup and Move into a real Chain of Responsibility Pattern
         try {
             validateParameters();
@@ -57,14 +56,15 @@ public class DeployerChain {
 
             log("q'Apla!");
 
-            c.listener.finished(Result.SUCCESS);
+            return true;
         } catch (InvalidParametersException e) {
             log("Skipping update: %s", e.getMessage());
 
-            c.listener.finished(Result.FAILURE);
+            return false;
         } catch (InvalidEnvironmentsSizeException e) {
             log("Environment %s/%s not found. Continuing", e.getApplicationName(), e.getEnvironmentName());
-            c.listener.finished(Result.FAILURE);
+
+            return false;
         }
 
     }

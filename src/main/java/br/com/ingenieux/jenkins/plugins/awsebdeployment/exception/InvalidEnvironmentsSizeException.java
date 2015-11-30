@@ -1,9 +1,11 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.exception;
 
 public class InvalidEnvironmentsSizeException extends Exception {
+	private static final long serialVersionUID = 1L;
 
-    private final String applicationName;
-    private final String environmentName;
+	private final String applicationName;
+    
+	private final String environmentName;
 
     public InvalidEnvironmentsSizeException(String applicationName, String environmentName) {
         super();

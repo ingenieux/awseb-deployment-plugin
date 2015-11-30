@@ -31,21 +31,18 @@ import hudson.model.BuildListener;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serializable;
 
-public class DeployerContext implements Constants {
-    final AWSEBDeploymentBuilder deployerConfig;
+public class DeployerContext implements Constants, Serializable {
+    final AWSEBDeploymentConfig deployerConfig;
 
-	final PrintStream logger;
-
-    final Launcher launcher;
-
-    final Utils.Replacer replacer;
+	transient final PrintStream logger;
 
     final FilePath rootFileObject;
 
-    AmazonS3 s3;
+    transient AmazonS3 s3;
 
-    AWSElasticBeanstalk awseb;
+    transient AWSElasticBeanstalk awseb;
 
     String keyPrefix;
 
@@ -59,24 +56,11 @@ public class DeployerContext implements Constants {
 
     String s3ObjectPath;
 
-    EnvVars env;
-
     String environmentName;
 
-    BuildListener listener;
-
-    public DeployerContext(AWSEBDeploymentBuilder o,
-                           AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-        this.env = build.getEnvironment(listener);
-
-        this.replacer = new Utils.Replacer(this.env);
-
-        this.deployerConfig = o.replacedCopy(this.replacer);
-
-		this.logger = listener.getLogger();
-        this.launcher = launcher;
-        this.listener = listener;
-
-        this.rootFileObject = new FilePath(build.getWorkspace(), this.deployerConfig.getRootObject());
+    public DeployerContext(AWSEBDeploymentConfig deployerConfig, PrintStream logger, FilePath rootFileObject) {
+        this.deployerConfig = deployerConfig;
+        this.logger = logger;
+        this.rootFileObject = rootFileObject;
     }
 }

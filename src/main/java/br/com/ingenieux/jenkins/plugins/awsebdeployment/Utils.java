@@ -4,6 +4,7 @@ import hudson.EnvVars;
 import hudson.Util;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.Serializable;
 import java.util.Properties;
 
 public class Utils implements Constants {
@@ -11,7 +12,7 @@ public class Utils implements Constants {
         return strip(String.format(mask, args).replaceAll("/{2,}", ""));
     }
 
-    public static class Replacer {
+    public static class Replacer implements Serializable {
         final EnvVars envVars;
 
         public Replacer(EnvVars envVars) {

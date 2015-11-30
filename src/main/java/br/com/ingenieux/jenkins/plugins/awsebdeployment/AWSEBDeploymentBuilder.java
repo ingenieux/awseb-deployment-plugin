@@ -36,12 +36,12 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.EnvVars;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Item;
+import hudson.model.*;
+import hudson.remoting.Channel;
 import hudson.security.ACL;
 import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
@@ -53,6 +53,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -60,45 +61,8 @@ import java.util.List;
 /**
  * AWS Elastic Beanstalk Deployment
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"unchecked", "deprecation"})
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
-    @DataBoundConstructor
-    public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName, String environmentName, String bucketName, String keyPrefix, String versionLabelFormat, String rootObject, String includes, String excludes, boolean zeroDowntime) {
-        this.credentialId = credentialId;
-        this.awsRegion = awsRegion;
-        this.applicationName = applicationName;
-        this.environmentName = environmentName;
-        this.bucketName = bucketName;
-        this.keyPrefix = keyPrefix;
-        this.versionLabelFormat = versionLabelFormat;
-        this.rootObject = rootObject;
-        this.includes = includes;
-        this.excludes = excludes;
-        this.zeroDowntime = zeroDowntime;
-    }
-
-    /**
-     * Copy Factory
-     *
-     * @param r replacer
-     * @return replaced copy
-     */
-    public AWSEBDeploymentBuilder replacedCopy(Utils.Replacer r) {
-        return new AWSEBDeploymentBuilder(
-                r.r(this.getCredentialId()),
-                r.r(this.getAwsRegion()),
-                r.r(this.getApplicationName()),
-                r.r(this.getEnvironmentName()),
-                r.r(this.getBucketName()),
-                r.r(this.getKeyPrefix()),
-                r.r(this.getVersionLabelFormat()),
-                r.r(this.getRootObject()),
-                r.r(this.getIncludes()),
-                r.r(this.getExcludes()),
-                this.isZeroDowntime()
-        );
-    }
-
 
     /**
      * Credentials name
@@ -184,15 +148,38 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         return zeroDowntime;
     }
 
+    @DataBoundConstructor
+    public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName, String environmentName, String bucketName, String keyPrefix, String versionLabelFormat, String rootObject, String includes, String excludes, boolean zeroDowntime) {
+        this.credentialId = credentialId;
+        this.awsRegion = awsRegion;
+        this.applicationName = applicationName;
+        this.environmentName = environmentName;
+        this.bucketName = bucketName;
+        this.keyPrefix = keyPrefix;
+        this.versionLabelFormat = versionLabelFormat;
+        this.rootObject = rootObject;
+        this.includes = includes;
+        this.excludes = excludes;
+        this.zeroDowntime = zeroDowntime;
+    }
+
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
                            BuildListener listener) {
         try {
-            DeployerContext deployerContext = new DeployerContext(this, build, launcher, listener);
+            EnvVars environment = build.getEnvironment(listener);
 
-            DeployerChain deployerChain = new DeployerChain(deployerContext);
+            AWSEBDeploymentConfig deploymentConfig = asConfig().replacedCopy(new Utils.Replacer(environment));
 
-            deployerChain.perform();
+            PrintStream logger = listener.getLogger();
+
+            FilePath rootFileObject = new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
+
+            final DeployerContext deployerContext = new DeployerContext(deploymentConfig, logger, rootFileObject);
+
+            Boolean result = launcher.getChannel().call(new SlaveDeployerCallable(deployerContext));
+
+            listener.finished(result.booleanValue() ? Result.SUCCESS : Result.FAILURE);
 
             return true;
         } catch (Exception exc) {
@@ -211,6 +198,21 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
+    }
+
+    public AWSEBDeploymentConfig asConfig() {
+        return new AWSEBDeploymentConfig(
+                credentialId,
+                awsRegion,
+                applicationName,
+                environmentName,
+                bucketName,
+                keyPrefix,
+                versionLabelFormat,
+                rootObject,
+                includes,
+                excludes,
+                zeroDowntime);
     }
 
     @Extension
@@ -244,7 +246,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             if (value.contains("$"))
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
 
-            if (! value.matches("^\\p{Alpha}{2}-(?:gov-)?\\p{Alpha}{4,}-\\d$")) {
+            if (!value.matches("^\\p{Alpha}{2}-(?:gov-)?\\p{Alpha}{4,}-\\d$")) {
                 return FormValidation.error("Doesn't look like a region, like {place}-{cardinal}-{number}");
             }
             return FormValidation.ok();
@@ -265,7 +267,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             if (value.contains("$"))
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
 
-            if (! value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,22}$") || value.endsWith("-")) {
+            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,22}$") || value.endsWith("-")) {
                 return FormValidation.error("Doesn't look like an environment name. Must be from 4 to 23 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
             }
             return FormValidation.ok();
