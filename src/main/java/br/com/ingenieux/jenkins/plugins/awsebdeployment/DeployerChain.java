@@ -2,34 +2,22 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.exception.InvalidEnvironmentsSizeException;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.exception.InvalidParametersException;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.FilePath;
 import hudson.model.Result;
-import hudson.security.ACL;
 import hudson.util.DirScanner;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.ArrayUtils;
 
-import javax.security.auth.login.CredentialNotFoundException;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class DeployerChain {
     final DeployerContext c;
@@ -45,7 +33,7 @@ public class DeployerChain {
             initAWS();
             String[] environmentNames = generateEnvironmentNames();
 
-            log("Running Version %s", getVersion());
+            log("Running Version %s", Utils.getVersion());
 
             uploadArchive();
             ApplicationVersionDescription applicationVersion = createApplicationVersion();
@@ -266,56 +254,10 @@ public class DeployerChain {
 
     private void initAWS()
             throws Exception {
-        AWSCredentialsProvider credentials = new DefaultAWSCredentialsProviderChain();
+        AWSClientFactory factory = AWSClientFactory.getClientFactory(c.deployerConfig.getCredentialsId(), c.deployerConfig.getAwsRegion());
 
-        if (isNotBlank(c.deployerConfig.getCredentialsId())) {
-            List<AmazonWebServicesCredentials> credentialList =
-                    CredentialsProvider.lookupCredentials(
-                            AmazonWebServicesCredentials.class, Jenkins.getInstance(), ACL.SYSTEM,
-                            Collections.<DomainRequirement>emptyList());
-
-            AmazonWebServicesCredentials cred =
-                    CredentialsMatchers.firstOrNull(credentialList,
-                            CredentialsMatchers.allOf(CredentialsMatchers.withId(c.deployerConfig.getCredentialsId())));
-
-            if (cred == null)
-                throw new CredentialNotFoundException(c.deployerConfig.getCredentialsId());
-
-            credentials = new AWSCredentialsProviderChain(new StaticCredentialsProvider(new BasicAWSCredentials(cred.getCredentials().getAWSAccessKeyId(), cred.getCredentials().getAWSSecretKey())));
-        }
-
-        log("Creating S3 and AWSEB Client (region: %s)",
-                c.deployerConfig.getAwsRegion());
-
-        ClientConfiguration clientConfig = new ClientConfiguration();
-
-        clientConfig.setUserAgent("ingenieux CloudButler/" + getVersion());
-
-        final AWSClientFactory
-                awsClientFactory =
-                new AWSClientFactory(credentials, clientConfig, c.deployerConfig.getAwsRegion());
-
-        c.s3 = awsClientFactory.getService(AmazonS3Client.class);
-        c.awseb = awsClientFactory.getService(AWSElasticBeanstalkClient.class);
-    }
-
-    private static String VERSION = "UNKNOWN";
-
-    private static String getVersion() {
-        if ("UNKNOWN".equals(VERSION)) {
-            try {
-                Properties p = new Properties();
-
-                p.load(DeployerContext.class.getResourceAsStream("version.properties"));
-
-                VERSION = p.getProperty("awseb-deployer-plugin.version");
-
-            } catch (Exception exc) {
-                throw new RuntimeException(exc);
-            }
-        }
-
-        return VERSION;
+        c.s3 = factory.getService(AmazonS3Client.class);
+        c.awseb = factory.getService(AWSElasticBeanstalkClient.class);
     }
 
     void log(String mask, Object... args) {

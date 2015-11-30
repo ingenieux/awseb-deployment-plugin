@@ -21,6 +21,10 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
  */
 
 
+import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
+import com.amazonaws.services.elasticbeanstalk.model.ListAvailableSolutionStacksResult;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.Bucket;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -33,19 +37,26 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Item;
+import hudson.remoting.Channel;
 import hudson.security.ACL;
 import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import jenkins.security.MasterToSlaveCallable;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.PrintWriter;
+import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
+
+import static java.lang.String.format;
 
 /**
  * AWS Elastic Beanstalk Deployment
@@ -214,8 +225,97 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             return true;
         }
 
-        public FormValidation doValidateCredentials(@QueryParameter("credentialsId") String credentialName, @QueryParameter("awsRegion") String region) throws Exception {
-            return FormValidation.ok("Meh");
+        public FormValidation doValidateCredentials(@QueryParameter("credentialsId") String credentialsId, @QueryParameter("awsRegion") String awsRegion) throws Exception {
+            CommandResult result = Channel.current().call(new ObtainCredentialsCommand(credentialsId, awsRegion));
+
+            if (result.isSuccessful()) {
+                return FormValidation.ok(result.getResult());
+            } else {
+                return FormValidation.error(result.getException(), result.getResult());
+            }
+        }
+    }
+
+
+    public static class CommandResult implements Serializable {
+        final boolean successful;
+
+        final Exception exception;
+
+        final String result;
+
+        public CommandResult(boolean successful, Exception exception, String result) {
+            this.successful = successful;
+            this.exception = exception;
+            this.result = result;
+        }
+
+        public boolean isSuccessful() {
+            return successful;
+        }
+
+        public Exception getException() {
+            return exception;
+        }
+
+        public String getResult() {
+            return result;
+        }
+    }
+
+    public static class ObtainCredentialsCommand extends MasterToSlaveCallable<CommandResult, Exception> {
+        String credentialsId;
+
+        String awsRegion;
+
+        PrintWriter out;
+
+        StringWriter result;
+
+        public ObtainCredentialsCommand(String credentialsId, String awsRegion) {
+            this.credentialsId = credentialsId;
+            this.awsRegion = awsRegion;
+            this.result = new StringWriter();
+            this.out = new PrintWriter(result, true);
+        }
+
+        protected void log(String message, Object... args) {
+            out.println(format(message, args));
+        }
+
+        @Override
+        public CommandResult call() throws Exception {
+            try {
+                log("Creating AWS Client with credentialsId '%s' on region '%s'");
+
+                AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(this.credentialsId, awsRegion);
+
+                log("Instantiating AWS Elastic Beanstalk Client");
+
+                AWSElasticBeanstalk ebService = clientFactory.getService(AWSElasticBeanstalk.class);
+
+                log("Instantiating Amazon S3 Client");
+
+                AmazonS3 s3Service = clientFactory.getService(AmazonS3.class);
+
+                log("Attempting to List Solution Stacks- Failure is ok");
+
+                for (String stack : ebService.listAvailableSolutionStacks().getSolutionStacks()) {
+                    log(" * Found Stack: %s", stack);
+                }
+
+                log("Attempting to List S3 Buckets - Failure is ok");
+
+                for (Bucket b : s3Service.listBuckets()) {
+                    log(" * Found Bucket: %s", b.getName());
+                }
+
+                log("Finished");
+
+                return new CommandResult(true, null, result.toString());
+            } catch (Exception exc) {
+                return new CommandResult(false, exc, result.toString());
+            }
         }
     }
 
