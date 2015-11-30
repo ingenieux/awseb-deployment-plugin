@@ -39,11 +39,13 @@ public class DeployerContext implements Constants {
 
     final Launcher launcher;
 
+    final Utils.Replacer replacer;
+
+    final FilePath rootFileObject;
+
     AmazonS3 s3;
 
     AWSElasticBeanstalk awseb;
-
-    final FilePath rootFileObject;
 
     String keyPrefix;
 
@@ -57,20 +59,24 @@ public class DeployerContext implements Constants {
 
     String s3ObjectPath;
 
-    final EnvVars env;
+    EnvVars env;
 
     String environmentName;
 
-    final BuildListener listener;
+    BuildListener listener;
 
-	public DeployerContext(AWSEBDeploymentBuilder builder,
+    public DeployerContext(AWSEBDeploymentBuilder o,
                            AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-		this.deployerConfig = builder;
+        this.env = build.getEnvironment(listener);
+
+        this.replacer = new Utils.Replacer(this.env);
+
+        this.deployerConfig = o.replacedCopy(this.replacer);
+
 		this.logger = listener.getLogger();
-		this.env = build.getEnvironment(listener);
         this.launcher = launcher;
         this.listener = listener;
 
-		this.rootFileObject = new FilePath(build.getWorkspace(), Utils.getValue(deployerConfig.getRootObject(), this.env));
-	}
+        this.rootFileObject = new FilePath(build.getWorkspace(), this.deployerConfig.getRootObject());
+    }
 }

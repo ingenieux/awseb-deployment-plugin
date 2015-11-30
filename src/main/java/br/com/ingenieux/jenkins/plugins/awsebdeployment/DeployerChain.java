@@ -13,7 +13,7 @@ import org.apache.commons.lang.ArrayUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -149,7 +149,7 @@ public class DeployerChain {
             log("Checking health of environment %s attempt %d/%s", environmentId, nAttempt, DeployerContext.MAX_ATTEMPTS);
 
             List<EnvironmentDescription> environments = c.awseb.describeEnvironments(new DescribeEnvironmentsRequest()
-                    .withEnvironmentIds(Arrays.asList(environmentId))).getEnvironments();
+                    .withEnvironmentIds(Collections.singletonList(environmentId))).getEnvironments();
 
             if (environments.size() != 1) {
                 throw new InvalidEnvironmentsSizeException(c.applicationName, c.environmentName);
@@ -215,11 +215,11 @@ public class DeployerChain {
     }
 
     private void validateParameters() throws InvalidParametersException {
-        c.keyPrefix = Utils.getValue(c.deployerConfig.getKeyPrefix(), c.env);
-        c.bucketName = Utils.getValue(c.deployerConfig.getBucketName(), c.env);
-        c.applicationName = Utils.getValue(c.deployerConfig.getApplicationName(), c.env);
-        c.versionLabel = Utils.getValue(c.deployerConfig.getVersionLabelFormat(), c.env);
-        c.environmentName = Utils.getValue(c.deployerConfig.getEnvironmentName(), c.env);
+        c.keyPrefix = c.deployerConfig.getKeyPrefix();
+        c.bucketName = c.deployerConfig.getBucketName();
+        c.applicationName = c.deployerConfig.getApplicationName();
+        c.versionLabel = c.deployerConfig.getVersionLabelFormat();
+        c.environmentName = c.deployerConfig.getEnvironmentName();
 
         if (isBlank(c.environmentName)) {
             throw new InvalidParametersException("Empty/blank environmentName parameter");
@@ -242,6 +242,7 @@ public class DeployerChain {
         List<String> environmentNames = new ArrayList<String>() {{
             add(c.environmentName);
         }};
+
         if (c.deployerConfig.isZeroDowntime()) {
             String newEnvironmentName = c.environmentName.length() <= DeployerContext.MAX_ENVIRONMENT_NAME_LENGTH - 2 ?
                     c.environmentName : c.environmentName.substring(0, c.environmentName.length() - 2);

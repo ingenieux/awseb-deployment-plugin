@@ -7,6 +7,7 @@ Jenkins Plugin for AWS Elastic Beanstalk Deployments
 ## TODO LIST
 
   * Update Docs
+  * Unit Tests (I know, I know)
   * Implement a better deployment pipeline using a Chain of Responsibility
   * Support Job DSL and Workflow Plugins
   * Ensure parameters are properly dealt

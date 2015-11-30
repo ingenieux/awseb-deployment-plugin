@@ -11,8 +11,16 @@ public class Utils implements Constants {
         return strip(String.format(mask, args).replaceAll("/{2,}", ""));
     }
 
-    public static String getValue(String value, EnvVars env) {
-        return strip(Util.replaceMacro(value, env));
+    public static class Replacer {
+        final EnvVars envVars;
+
+        public Replacer(EnvVars envVars) {
+            this.envVars = envVars;
+        }
+
+        public String r(String value) {
+            return strip(Util.replaceMacro(value, envVars));
+        }
     }
 
     private static String strip(String str) {

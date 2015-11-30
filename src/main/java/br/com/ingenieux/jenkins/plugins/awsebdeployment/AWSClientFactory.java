@@ -7,7 +7,7 @@ import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -34,11 +34,11 @@ public class AWSClientFactory implements Constants {
 
     private String region;
 
-    protected AWSClientFactory(AWSCredentialsProvider creds, ClientConfiguration clientConfiguration,
+    private AWSClientFactory(AWSCredentialsProvider creds, ClientConfiguration clientConfiguration,
                             String region) {
         this.creds = creds;
         this.clientConfiguration = clientConfiguration;
-        this.region = region;
+        this.region = region.toLowerCase();
     }
 
     @SuppressWarnings("unchecked")
@@ -47,7 +47,16 @@ public class AWSClientFactory implements Constants {
             InvocationTargetException, InstantiationException {
 
         Class<?> paramTypes[] = new Class<?>[]{AWSCredentialsProvider.class, ClientConfiguration.class};
-        Object params[] = new Object[]{creds, clientConfiguration};
+
+        ClientConfiguration newClientConfiguration = new ClientConfiguration(this.clientConfiguration);
+
+        if (AmazonS3.class.isAssignableFrom(serviceClazz)) {
+            newClientConfiguration = newClientConfiguration.withSignerOverride("AWSS3V4SignerType");
+        } else {
+            newClientConfiguration = newClientConfiguration.withSignerOverride(null);
+        }
+
+        Object params[] = new Object[]{creds, newClientConfiguration};
 
         T resultObj = (T) ConstructorUtils.invokeConstructor(serviceClazz, params, paramTypes);
 

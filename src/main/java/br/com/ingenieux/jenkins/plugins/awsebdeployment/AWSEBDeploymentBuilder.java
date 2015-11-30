@@ -28,7 +28,6 @@ import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -54,7 +53,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.security.auth.login.CredentialNotFoundException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,6 +76,29 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.excludes = excludes;
         this.zeroDowntime = zeroDowntime;
     }
+
+    /**
+     * Copy Factory
+     *
+     * @param r replacer
+     * @return replaced copy
+     */
+    public AWSEBDeploymentBuilder replacedCopy(Utils.Replacer r) {
+        return new AWSEBDeploymentBuilder(
+                r.r(this.getCredentialId()),
+                r.r(this.getAwsRegion()),
+                r.r(this.getApplicationName()),
+                r.r(this.getEnvironmentName()),
+                r.r(this.getBucketName()),
+                r.r(this.getKeyPrefix()),
+                r.r(this.getVersionLabelFormat()),
+                r.r(this.getRootObject()),
+                r.r(this.getIncludes()),
+                r.r(this.getExcludes()),
+                this.isZeroDowntime()
+        );
+    }
+
 
     /**
      * Credentials name
@@ -219,8 +241,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         }
 
         public FormValidation doCheckAwsRegion(@QueryParameter String value) {
-            if (-1 != value.indexOf("${"))
-                return FormValidation.ok();
+            if (value.contains("$"))
+                return FormValidation.warning("Validation skipped due to parameter usage ('$')");
 
             if (! value.matches("^\\p{Alpha}{2}-(?:gov-)?\\p{Alpha}{4,}-\\d$")) {
                 return FormValidation.error("Doesn't look like a region, like {place}-{cardinal}-{number}");
@@ -229,8 +251,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         }
 
         public FormValidation doCheckApplicationName(@QueryParameter String value) {
-            if (-1 != value.indexOf("${"))
-                return FormValidation.ok();
+            if (value.contains("$"))
+                return FormValidation.warning("Validation skipped due to parameter usage ('$')");
 
             int valueLen = value.length();
             if (valueLen == 0 || valueLen > 100) {
@@ -240,8 +262,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         }
 
         public FormValidation doCheckEnvironmentName(@QueryParameter String value) {
-            if (-1 != value.indexOf("${"))
-                return FormValidation.ok();
+            if (value.contains("$"))
+                return FormValidation.warning("Validation skipped due to parameter usage ('$')");
 
             if (! value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,22}$") || value.endsWith("-")) {
                 return FormValidation.error("Doesn't look like an environment name. Must be from 4 to 23 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
@@ -249,7 +271,13 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doValidateCredentials(@QueryParameter("credentialId") final String credentialId, @QueryParameter final String awsRegion) {
+        public FormValidation doValidateCredentials(@QueryParameter("credentialId") final String credentialId,
+                                                    @QueryParameter final String awsRegion) {
+            for (String value : Arrays.asList(credentialId, awsRegion)) {
+                if (value.contains("$"))
+                    return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+            }
+
             try {
                 LoggerWriter loggerWriter = LoggerWriter.get();
 
@@ -293,11 +321,16 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                                     @QueryParameter("awsRegion") String awsRegion,
                                                     @QueryParameter("applicationName") String applicationName,
                                                     @QueryParameter("environmentName") String environmentName) throws Exception {
+            for (String value : Arrays.asList(credentialId, awsRegion, applicationName, environmentName)) {
+                if (value.contains("$"))
+                    return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+            }
+
             AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
 
             AWSElasticBeanstalk awsElasticBeanstalk = clientFactory.getService(AWSElasticBeanstalkClient.class);
 
-            DescribeEnvironmentsResult describeEnvironmentsResult = awsElasticBeanstalk.describeEnvironments(new DescribeEnvironmentsRequest().withEnvironmentNames(environmentName));
+            DescribeEnvironmentsResult describeEnvironmentsResult = awsElasticBeanstalk.describeEnvironments(new DescribeEnvironmentsRequest().withApplicationName(applicationName).withEnvironmentNames(environmentName));
 
             if (1 == describeEnvironmentsResult.getEnvironments().size()) {
                 String environmentId = describeEnvironmentsResult.getEnvironments().get(0).getEnvironmentId();
