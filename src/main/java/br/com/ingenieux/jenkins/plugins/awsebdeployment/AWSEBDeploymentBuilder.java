@@ -236,7 +236,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             List<AmazonWebServicesCredentials> creds = CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
 
             return new AWSCredentialsListBoxModel()
-                    .withEmptySelection()
+//                  .withEmptySelection()
                     .withAll(creds);
         }
 
