@@ -254,7 +254,7 @@ public class DeployerChain {
 
     private void initAWS()
             throws Exception {
-        AWSClientFactory factory = AWSClientFactory.getClientFactory(c.deployerConfig.getCredentialsId(), c.deployerConfig.getAwsRegion());
+        AWSClientFactory factory = AWSClientFactory.getClientFactory(c.deployerConfig.getCredentialId(), c.deployerConfig.getAwsRegion());
 
         c.s3 = factory.getService(AmazonS3Client.class);
         c.awseb = factory.getService(AWSElasticBeanstalkClient.class);

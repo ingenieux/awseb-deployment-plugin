@@ -6,15 +6,15 @@
     -->
 
     <f:section title="AWS Credentials and Region">
-        <f:entry title="${%Credentials}" field="credentialsId">
-            <c:select expressionAllowed="true"/>
+        <f:entry title="${%Credentials}" field="credentialId">
+            <c:select />
         </f:entry>
 
         <f:entry title="AWS Region" field="awsRegion">
             <f:textbox default="us-east-1"/>
         </f:entry>
 
-        <f:validateButton method="validateCredentials" title="Validate Credentials" with="credentialsId,awsRegion"/>
+        <f:validateButton method="validateCredentials" title="Validate Credentials" with="credentialId,awsRegion"/>
     </f:section>
 
     <f:section title="Application and Environment">
@@ -26,9 +26,7 @@
             <f:textbox/>
         </f:entry>
 
-        <!-- Not yet
-        <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialsId,awsRegion,applicationName,environmentName"/>
-        -->
+        <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialId,awsRegion,applicationName,environmentName"/>
     </f:section>
 
     <f:section title="Packaging">
@@ -43,6 +41,10 @@
         <f:entry title="Excludes" field="excludes">
             <f:textbox/>
         </f:entry>
+
+        <!-- Not today :/
+        <f:validateButton method="validatePackaging" title="Validate Packaging" with="rootObject,includes,excludes"/>
+        -->
     </f:section>
 
     <f:section title="Uploading">
@@ -54,8 +56,8 @@
             <f:textbox/>
         </f:entry>
 
-        <!-- Not yet
-        <f:validateButton method="validateUpload" title="Validate Upload" with="credentialsId,awsRegion,applicationName,environmentName"/>
+        <!-- Not today :/
+        <f:validateButton method="validateUpload" title="Validate Upload" with="credentialId,awsRegion,applicationName,environmentName"/>
         -->
     </f:section>
 

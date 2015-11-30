@@ -2,27 +2,12 @@
 
 [![Join the chat at https://gitter.im/ingenieux/awseb-deployment-plugin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ingenieux/awseb-deployment-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Jenkins Plugin for AWS Elastic Beanstalk
+Jenkins Plugin for AWS Elastic Beanstalk Deployments
 
-# TL;DR
+## TODO LIST
 
-Add a Post Build Step. Here's an example:
-
-![Example Config](http://content.screencast.com/users/aldrinleal/folders/Snagit/media/f2042a57-892f-4cd0-9400-c6eca2674eba/10.27.2013-16.58.png)
-
-Results into this on your logs:
-
-```
-Copying contents of C:\projetos\sources\awseb-deployment\work\jobs\docs.ingenieux.com.br\workspace\target\ingenieux-docs.war into temp file C:\Users\Aldrin\AppData\Local\Temp\awseb-896909810375432889.zip
-Uploading file C:\Users\Aldrin\AppData\Local\Temp\awseb-896909810375432889.zip as s3://ingenieux-beanstalk-apps/ingenieux-docs/ingenieux-docs-app-2013-10-27_17-03-37.zip
-Creating application version 2013-10-27_17-03-37 for application ingenieux-docs-app for path s3://ingenieux-beanstalk-apps/ingenieux-docs/ingenieux-docs-app-2013-10-27_17-03-37.zip
-Environment not found. Continuing
-Finished: SUCCESS
-Finished: SUCCESS
-```
-
-Enjoy
-
-# Gotchas and Todo
-
-  * No validation is performed
+  * Update Docs
+  * Implement a better deployment pipeline using a Chain of Responsibility
+  * Support Job DSL and Workflow Plugins
+  * Ensure parameters are properly dealt
+    * See https://github.com/jenkinsci/credentials-plugin/issues/35

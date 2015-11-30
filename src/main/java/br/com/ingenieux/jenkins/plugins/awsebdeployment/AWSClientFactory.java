@@ -7,6 +7,7 @@ import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -14,9 +15,11 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.reflect.ConstructorUtils;
+import org.apache.commons.lang.reflect.FieldUtils;
 
 import javax.security.auth.login.CredentialNotFoundException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
@@ -90,5 +93,15 @@ public class AWSClientFactory implements Constants {
         clientConfig.setUserAgent("ingenieux CloudButler/" + Utils.getVersion());
 
         return new AWSClientFactory(credentials, clientConfig, awsRegion);
+    }
+
+    public <T extends AmazonWebServiceClient> String getEndpointFor(T client) {
+        try {
+            URI endpointUri = (URI) FieldUtils.readField(client, "endpoint", true);
+
+            return endpointUri.toASCIIString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
