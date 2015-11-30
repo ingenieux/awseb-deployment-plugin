@@ -31,18 +31,19 @@ import hudson.model.BuildListener;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
 
 public class DeployerContext implements Constants, Serializable {
     final AWSEBDeploymentConfig deployerConfig;
-
-	transient final PrintStream logger;
 
     final FilePath rootFileObject;
 
     transient AmazonS3 s3;
 
     transient AWSElasticBeanstalk awseb;
+
+    transient PrintWriter logger;
 
     String keyPrefix;
 
@@ -58,9 +59,8 @@ public class DeployerContext implements Constants, Serializable {
 
     String environmentName;
 
-    public DeployerContext(AWSEBDeploymentConfig deployerConfig, PrintStream logger, FilePath rootFileObject) {
+    public DeployerContext(AWSEBDeploymentConfig deployerConfig, FilePath rootFileObject) {
         this.deployerConfig = deployerConfig;
-        this.logger = logger;
         this.rootFileObject = rootFileObject;
     }
 }

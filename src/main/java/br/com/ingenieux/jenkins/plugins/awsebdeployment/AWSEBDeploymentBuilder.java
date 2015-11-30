@@ -48,6 +48,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -175,9 +177,14 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
             FilePath rootFileObject = new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
 
-            final DeployerContext deployerContext = new DeployerContext(deploymentConfig, logger, rootFileObject);
+            final DeployerContext deployerContext = new DeployerContext(deploymentConfig, rootFileObject);
 
-            Boolean result = launcher.getChannel().call(new SlaveDeployerCallable(deployerContext));
+            String argument = Base64.encodeBase64String(SerializationUtils.serialize(deployerContext));
+
+            listener.getLogger().printf("Argument: %s\n", argument);
+
+            //Boolean result = launcher.getChannel().call(new SlaveDeployerCallable(deployerContext));
+            Boolean result = Boolean.TRUE;
 
             listener.finished(result.booleanValue() ? Result.SUCCESS : Result.FAILURE);
 

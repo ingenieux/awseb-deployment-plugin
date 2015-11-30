@@ -2,17 +2,17 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import hudson.EnvVars;
 import hudson.Util;
-import org.apache.commons.lang.StringUtils;
 
-import java.io.Serializable;
 import java.util.Properties;
+
+import org.apache.commons.lang.StringUtils;
 
 public class Utils implements Constants {
     public static String formatPath(String mask, Object... args) {
         return strip(String.format(mask, args).replaceAll("/{2,}", ""));
     }
 
-    public static class Replacer implements Serializable {
+    public static class Replacer {
         final EnvVars envVars;
 
         public Replacer(EnvVars envVars) {
