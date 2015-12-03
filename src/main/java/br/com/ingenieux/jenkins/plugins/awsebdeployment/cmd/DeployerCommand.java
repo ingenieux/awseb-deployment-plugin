@@ -108,6 +108,8 @@ public class DeployerCommand implements Constants {
 
             Validate.notEmpty(getVersionLabel(), "Empty/blank versionLabel parameter");
 
+            Validate.isTrue(getRootFileObject().exists(), "Root Object doesn't exist");
+
             return false;
         }
     }
