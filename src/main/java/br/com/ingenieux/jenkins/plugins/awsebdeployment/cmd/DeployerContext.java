@@ -14,11 +14,14 @@
  *    limitations under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 
@@ -58,7 +61,7 @@ public class DeployerContext implements Constants, Serializable {
     /**
      * Logger Object
      */
-    transient PrintWriter logger;
+    transient PrintStream logger;
 
     /**
      * Key Prefix
@@ -94,4 +97,9 @@ public class DeployerContext implements Constants, Serializable {
      * Environment Name
      */
     String environmentName;
+
+    /**
+     * Environment Id
+     */
+    String environmentId;
 }

@@ -18,16 +18,22 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import java.io.Serializable;
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerChain;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import jenkins.security.MasterToSlaveCallable;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public class SlaveDeployerCallable extends MasterToSlaveCallable<Boolean, Exception>
     implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  private final DeployerContext deployerContext;
+  final DeployerContext deployerContext;
+
+  public SlaveDeployerCallable(DeployerContext deployerContext) {
+    this.deployerContext = deployerContext;
+  }
 
   @Override
   public Boolean call() throws Exception {

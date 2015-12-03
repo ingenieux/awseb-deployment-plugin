@@ -17,7 +17,6 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 public interface Constants {
-
     String DEFAULT_REGION = "us-east-1";
 
     int MAX_ATTEMPTS = 15;

@@ -31,13 +31,9 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
-import hudson.remoting.Future;
-import hudson.remoting.Pipe;
 import hudson.security.ACL;
 import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
@@ -50,14 +46,11 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * AWS Elastic Beanstalk Deployment
@@ -152,68 +145,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
                            BuildListener listener) {
-        try {
-            EnvVars environment = build.getEnvironment(listener);
-
-            AWSEBDeploymentConfig
-                    deploymentConfig =
-                    asConfig().replacedCopy(new Utils.Replacer(environment));
-
-            PrintStream logger = listener.getLogger();
-
-            FilePath
-                    rootFileObject =
-                    new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
-
-            Pipe outputPipe = Pipe.createRemoteToLocal();
-
-            final DeployerContext
-                    deployerContext =
-                    new DeployerContext(deploymentConfig, rootFileObject, outputPipe);
-
-            if (!isBlank(deploymentConfig.getCredentialId())) {
-                deploymentConfig.setCredentials(
-                        AWSClientFactory.lookupNamedCredential(deploymentConfig.getCredentialId()));
-            }
-
-            final Future<Boolean>
-                    booleanFuture =
-                    launcher.getChannel().callAsync(new SlaveDeployerCallable(deployerContext));
-
-            byte[] buf = new byte[8192];
-
-            do {
-                if (outputPipe.getIn().available() <= 0) {
-                    Thread.sleep(200);
-                    continue;
-                }
-
-                int nRead = outputPipe.getIn().read(buf);
-
-                if (nRead <= 0) {
-                    Thread.sleep(200);
-                    continue;
-                }
-
-                logger.write(buf, 0, nRead);
-            } while (!booleanFuture.isDone());
-
-            { // One last fix
-                Thread.sleep(1000);
-
-                int nRead = outputPipe.getIn().read(buf);
-
-                logger.write(buf, 0, nRead);
-            }
-
-            Boolean result = booleanFuture.get();
-
-            listener.finished(result ? Result.SUCCESS : Result.FAILURE);
-
-            return true;
-        } catch (Exception exc) {
-            throw new RuntimeException(exc);
-        }
+        return new DeployerRunner(build, launcher, listener, this).perform();
     }
 
     public BuildStepMonitor getRequiredMonitorService() {

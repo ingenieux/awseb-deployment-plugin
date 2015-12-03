@@ -17,16 +17,14 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@ToString(exclude={"credentials"})
 public class AWSEBDeploymentConfig implements Serializable {
   private static final long serialVersionUID = 1L;
 
