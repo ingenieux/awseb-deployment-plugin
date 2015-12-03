@@ -23,17 +23,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.commons.lang.StringUtils.isNotBlank;
+
 public class ZeroDowntime extends DeployerCommand {
     List<String> environmentNames;
 
     String environmentId;
-    private String templateName;
+
+    String templateName;
 
     @Override
     public boolean perform() throws Exception {
         environmentNames = generateEnvironmentNames();
 
-        environmentId = lookupEnvironmentIds(environmentNames);
+        try {
+            environmentId = lookupEnvironmentIds(environmentNames);
+        } catch (InvalidEnvironmentsSizeException exc) {
+            log("Unable to find any suitable environment. Aborting.");
+
+            return true;
+        }
 
         templateName = createConfigurationTemplate(environmentId);
 
@@ -88,6 +97,13 @@ public class ZeroDowntime extends DeployerCommand {
     }
 
     private void terminateEnvironment(String environmentId) {
+        final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(new DescribeEnvironmentsRequest().withEnvironmentIds(environmentId).withIncludeDeleted(false));
+
+        if (result.getEnvironments().isEmpty()) {
+            log("Environment environmentId '%s' was already finished.");
+            return;
+        }
+
         log("Terminating environment %s", environmentId);
 
         TerminateEnvironmentRequest
@@ -133,7 +149,7 @@ public class ZeroDowntime extends DeployerCommand {
             }
         }
 
-        throw new InvalidEnvironmentsSizeException(getApplicationName(), environmentNames.get(0));
+        throw new InvalidEnvironmentsSizeException(getApplicationName(), environmentNames.get(0), environments.getEnvironments().size());
     }
 
     @Override
@@ -144,7 +160,7 @@ public class ZeroDowntime extends DeployerCommand {
             deleteTemplateName(templateName);
 
             terminateEnvironment(environmentId);
-        } else {
+        } else if (isNotBlank(getEnvironmentId())) {
             log("Rolling back on candidate environmentId '%s'", getEnvironmentId());
 
             terminateEnvironment(getEnvironmentId());
@@ -167,10 +183,13 @@ public class ZeroDowntime extends DeployerCommand {
 
         private final String environmentName;
 
-        public InvalidEnvironmentsSizeException(String applicationName, String environmentName) {
+        private final int environmentCount;
+
+        public InvalidEnvironmentsSizeException(String applicationName, String environmentName, int environmentCount) {
             super();
             this.applicationName = applicationName;
             this.environmentName = environmentName;
+            this.environmentCount = environmentCount;
         }
 
         public String getApplicationName() {
@@ -179,6 +198,10 @@ public class ZeroDowntime extends DeployerCommand {
 
         public String getEnvironmentName() {
             return environmentName;
+        }
+
+        public int getEnvironmentCount() {
+            return this.environmentCount;
         }
     }
 }

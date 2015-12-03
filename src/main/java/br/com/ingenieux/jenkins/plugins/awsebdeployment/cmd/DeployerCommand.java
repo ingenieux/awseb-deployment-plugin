@@ -292,6 +292,9 @@ public class DeployerCommand implements Constants {
         }
     }
 
+    /**
+     * Abort Pending Environment Updates
+     */
     public static class AbortPendingUpdates extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
