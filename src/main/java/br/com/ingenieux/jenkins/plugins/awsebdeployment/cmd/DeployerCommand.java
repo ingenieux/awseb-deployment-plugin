@@ -200,19 +200,13 @@ public class DeployerCommand implements Constants {
         }
     }
 
-    public enum WaitFor {
-        Status,
-        Health,
-        Both
-    }
-
     /**
      * Waits for the Environment to be Green and Available
      */
-    public static class ValidateEnvironmentStatus extends DeployerCommand {
+    public static class WaitForEnvironment extends DeployerCommand {
         final WaitFor waitFor;
 
-        public ValidateEnvironmentStatus(WaitFor waitFor) {
+        public WaitForEnvironment(WaitFor waitFor) {
             this.waitFor = waitFor;
         }
 
@@ -277,6 +271,46 @@ public class DeployerCommand implements Constants {
             log("Deployment marked as 'successful'. Starting post-deployment cleanup.");
 
             setSuccessfulP(true);
+
+            return false;
+        }
+    }
+
+    public static class AbortPendingUpdates extends DeployerCommand {
+        @Override
+        public boolean perform() throws Exception {
+            final DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
+                    withApplicationName(getApplicationName()).
+                    withEnvironmentIds(getEnvironmentId());
+
+            final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
+
+            if (1 != result.getEnvironments().size()) {
+                log("Environment w/ environmentId '%s' not found. Aborting.", getEnvironmentId());
+
+                return true;
+            }
+
+            String resultingStatus = result.getEnvironments().get(0).getStatus();
+            boolean abortableP = result.getEnvironments().get(0).getAbortableOperationInProgress();
+
+            if (!STATUS_READY.equals(resultingStatus)) {
+                if (abortableP) {
+                    log("AWS Abortable Environment Update Found. Calling abort on AWSEB Service");
+
+                    getAwseb().abortEnvironmentUpdate(new AbortEnvironmentUpdateRequest().withEnvironmentId(getEnvironmentId()));
+
+                    log("Environment Update Aborted. Proceeding.");
+                }
+
+                WaitForEnvironment waitForStatus = new WaitForEnvironment(WaitFor.Status);
+
+                waitForStatus.setDeployerContext(c);
+
+                return waitForStatus.perform();
+            } else {
+                log("No pending Environment Updates. Proceeding.");
+            }
 
             return false;
         }

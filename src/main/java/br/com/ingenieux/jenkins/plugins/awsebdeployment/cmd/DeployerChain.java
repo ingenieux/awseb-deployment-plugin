@@ -93,14 +93,17 @@ public class DeployerChain {
                 new DeployerCommand.CreateApplicationVersion()
         );
 
+        commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status));
+
         if (c.deployerConfig.isZeroDowntime()) {
             commandList.add(new ZeroDowntime());
         } else {
             commandList.add(new DeployerCommand.LookupEnvironmentId());
+
+            commandList.add(new DeployerCommand.AbortPendingUpdates());
+
             commandList.add(new DeployerCommand.UpdateApplicationVersion());
         }
-
-        commandList.add(new DeployerCommand.ValidateEnvironmentStatus(DeployerCommand.WaitFor.Both));
 
         commandList.add(new DeployerCommand.MarkAsSuccessful());
     }
