@@ -27,6 +27,7 @@ public class ZeroDowntime extends DeployerCommand {
     List<String> environmentNames;
 
     String environmentId;
+    private String templateName;
 
     @Override
     public boolean perform() throws Exception {
@@ -34,7 +35,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         environmentId = lookupEnvironmentIds(environmentNames);
 
-        String templateName = createConfigurationTemplate(environmentId);
+        templateName = createConfigurationTemplate(environmentId);
 
         String
                 clonedEnvironmentId =
@@ -114,7 +115,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         CreateConfigurationTemplateRequest request = new CreateConfigurationTemplateRequest()
                 .withEnvironmentId(environmentId).withApplicationName(getApplicationName())
-                .withTemplateName(getVersionLabel());
+                .withTemplateName("tmp-" + getVersionLabel());
 
         return getAwseb().createConfigurationTemplate(request).getTemplateName();
     }
@@ -139,6 +140,8 @@ public class ZeroDowntime extends DeployerCommand {
         if (isSuccessfulP()) {
             swapEnvironmentCnames(environmentId, getEnvironmentId());
 
+            deleteTemplateName(templateName);
+
             terminateEnvironment(environmentId);
         } else {
             log("Rolling back on candidate environmentId '%s'", getEnvironmentId());
@@ -147,6 +150,12 @@ public class ZeroDowntime extends DeployerCommand {
         }
 
         return false;
+    }
+
+    private void deleteTemplateName(String templateName) {
+        log("Excluding template name '%s'", templateName);
+
+        getAwseb().deleteConfigurationTemplate(new DeleteConfigurationTemplateRequest(getApplicationName(), templateName));
     }
 
     public static class InvalidEnvironmentsSizeException extends Exception {
