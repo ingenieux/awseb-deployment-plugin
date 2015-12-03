@@ -1,35 +1,47 @@
 /*
- * Copyright 2011 ingenieux Labs
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
-import com.amazonaws.services.elasticbeanstalk.model.*;
+import com.amazonaws.services.elasticbeanstalk.model.AbortEnvironmentUpdateRequest;
+import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
+import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionResult;
+import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
+import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
+import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
+import com.amazonaws.services.elasticbeanstalk.model.S3Location;
+import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3Client;
-import lombok.Data;
-import lombok.experimental.Delegate;
+
 import org.apache.commons.lang.Validate;
 
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import lombok.Data;
+import lombok.experimental.Delegate;
 
 @Data
 public class DeployerCommand implements Constants {
@@ -221,8 +233,9 @@ public class DeployerCommand implements Constants {
                 List<EnvironmentDescription> environments =
                         getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
                                 .withEnvironmentIds(
-                                        Collections.singletonList(getEnvironmentId())))
-                                .getEnvironments();
+                                        Collections.singletonList(getEnvironmentId()))
+                                .withIncludeDeleted(false)
+                        ).getEnvironments();
 
                 if (environments.size() != 1) {
                     log("Environment not found. Aborting");
@@ -283,7 +296,8 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             final DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentIds(getEnvironmentId());
+                    withEnvironmentIds(getEnvironmentId()).
+                    withIncludeDeleted(false);
 
             final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
 
@@ -317,5 +331,4 @@ public class DeployerCommand implements Constants {
             return false;
         }
     }
-
 }

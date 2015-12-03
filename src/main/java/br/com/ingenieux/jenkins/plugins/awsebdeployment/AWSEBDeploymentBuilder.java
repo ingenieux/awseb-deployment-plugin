@@ -1,20 +1,26 @@
 /*
- * Copyright 2011 ingenieux Labs
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
@@ -28,8 +34,19 @@ import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
@@ -44,17 +61,6 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import lombok.Getter;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.defaultIfBlank;
@@ -355,12 +361,14 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                                @QueryParameter("bucketName") String bucketName,
                                                @QueryParameter("keyPrefix") String keyPrefix,
                                                @QueryParameter("versionLabelFormat") String versionLabelFormat) {
-            String targetPath = format("s3://%s/%s/%s-%s.zip",
-                    defaultIfBlank(bucketName, "[default account bucket for region]"),
-                    defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
-                    defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
-                    defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>")
-            );
+            String objectKey = Utils.formatPath("%s/%s-%s.zip",
+                                                defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
+                                                defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
+                                                defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>"));
+
+            String targetPath = String.format("s3://%s/%s",
+                                              defaultIfBlank(bucketName, "[default account bucket for region]"),
+                                              objectKey);
 
             final String resultingMessage = format("Your object will be uploaded to S3 as: <code>%s</code> (<i>note replacements will apply</i>)", targetPath);
 
