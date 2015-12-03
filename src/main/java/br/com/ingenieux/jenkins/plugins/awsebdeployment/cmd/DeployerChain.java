@@ -39,11 +39,10 @@ public class DeployerChain {
         ListIterator<DeployerCommand> itCommand = commandList.listIterator();
 
         boolean abortedOnPerform = false;
-        boolean abortedOnRelease = false;
-        boolean mustAbort;
         Exception resultingException = null;
 
         while (itCommand.hasNext()) {
+            boolean mustAbort;
             DeployerCommand nextCommand = itCommand.next();
 
             nextCommand.setDeployerContext(c);
@@ -65,22 +64,16 @@ public class DeployerChain {
             DeployerCommand prevCommand = itCommand.previous();
 
             try {
-                mustAbort = prevCommand.release();
+                prevCommand.release();
             } catch (Exception exc) {
-                mustAbort = true;
                 resultingException = exc;
-            }
-
-            if (mustAbort) {
-                abortedOnRelease = true;
-                break;
             }
         }
 
         if (null != resultingException)
             throw resultingException;
 
-        return (abortedOnPerform || abortedOnRelease);
+        return abortedOnPerform;
     }
 
     @SuppressWarnings({"unchecked"})
