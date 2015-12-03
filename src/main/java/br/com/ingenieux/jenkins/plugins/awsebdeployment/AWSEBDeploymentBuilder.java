@@ -21,6 +21,9 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
  */
 
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.ApplicationDescription;
@@ -33,32 +36,39 @@ import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.model.*;
-import hudson.remoting.Channel;
-import hudson.security.ACL;
-import hudson.tasks.BuildStep;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Builder;
-import hudson.util.FormValidation;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.SerializationUtils;
+
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Item;
+import hudson.model.Result;
+import hudson.remoting.Future;
+import hudson.remoting.Pipe;
+import hudson.security.ACL;
+import hudson.tasks.BuildStep;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Builder;
+import hudson.util.FormValidation;
+
+import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * AWS Elastic Beanstalk Deployment
@@ -66,298 +76,376 @@ import java.util.List;
 @SuppressWarnings({"unchecked", "deprecation"})
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
+  /**
+   * Credentials name
+   */
+  private String credentialId;
+
+  /**
+   * AWS Region
+   */
+  private String awsRegion;
+
+  /**
+   * Application Name
+   */
+  private String applicationName;
+
+  /**
+   * Environment Name
+   */
+  private String environmentName;
+
+  /**
+   * Bucket Name
+   */
+  private String bucketName;
+
+  /**
+   * Key Format
+   */
+  private String keyPrefix;
+
+  private String versionLabelFormat;
+
+  private String rootObject;
+
+  private String includes;
+
+  private String excludes;
+
+  private boolean zeroDowntime;
+
+  @DataBoundConstructor
+  public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
+                                String environmentName, String bucketName, String keyPrefix,
+                                String versionLabelFormat, String rootObject, String includes,
+                                String excludes, boolean zeroDowntime) {
+    this.credentialId = credentialId;
+    this.awsRegion = awsRegion;
+    this.applicationName = applicationName;
+    this.environmentName = environmentName;
+    this.bucketName = bucketName;
+    this.keyPrefix = keyPrefix;
+    this.versionLabelFormat = versionLabelFormat;
+    this.rootObject = rootObject;
+    this.includes = includes;
+    this.excludes = excludes;
+    this.zeroDowntime = zeroDowntime;
+  }
+
+  public String getCredentialId() {
+    return credentialId;
+  }
+
+  public String getAwsRegion() {
+    return awsRegion;
+  }
+
+  public String getApplicationName() {
+    return applicationName;
+  }
+
+  public String getEnvironmentName() {
+    return environmentName;
+  }
+
+  public String getBucketName() {
+    return bucketName;
+  }
+
+  public String getKeyPrefix() {
+    return keyPrefix;
+  }
+
+  public String getVersionLabelFormat() {
+    return versionLabelFormat;
+  }
+
+  public String getRootObject() {
+    return rootObject;
+  }
+
+  public String getIncludes() {
+    return includes;
+  }
+
+  public String getExcludes() {
+    return excludes;
+  }
+
+  public boolean isZeroDowntime() {
+    return zeroDowntime;
+  }
+
+  @Override
+  public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
+                         BuildListener listener) {
+    try {
+      EnvVars environment = build.getEnvironment(listener);
+
+      AWSEBDeploymentConfig
+          deploymentConfig =
+          asConfig().replacedCopy(new Utils.Replacer(environment));
+
+      PrintStream logger = listener.getLogger();
+
+      FilePath
+          rootFileObject =
+          new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
+
+      Pipe outputPipe = Pipe.createRemoteToLocal();
+
+      final DeployerContext
+          deployerContext =
+          new DeployerContext(deploymentConfig, rootFileObject, outputPipe);
+
+      if (!isBlank(deploymentConfig.getCredentialId())) {
+        deploymentConfig.setCredentials(
+            AWSClientFactory.lookupNamedCredential(deploymentConfig.getCredentialId()));
+      }
+
+      final Future<Boolean>
+          booleanFuture =
+          launcher.getChannel().callAsync(new SlaveDeployerCallable(deployerContext));
+
+      byte[] buf = new byte[8192];
+
+      do {
+        if (outputPipe.getIn().available() <= 0) {
+          Thread.sleep(200);
+          continue;
+        }
+
+        int nRead = outputPipe.getIn().read(buf);
+
+        if (nRead <= 0) {
+          Thread.sleep(200);
+          continue;
+        }
+
+        logger.write(buf, 0, nRead);
+      } while (!booleanFuture.isDone());
+
+      { // One last fix
+        Thread.sleep(1000);
+
+        int nRead = outputPipe.getIn().read(buf);
+
+        logger.write(buf, 0, nRead);
+      }
+
+      Boolean result = booleanFuture.get();
+
+      listener.finished(result ? Result.SUCCESS : Result.FAILURE);
+
+      return true;
+    } catch (Exception exc) {
+      throw new RuntimeException(exc);
+    }
+  }
+
+  public BuildStepMonitor getRequiredMonitorService() {
+    return BuildStepMonitor.NONE;
+  }
+
+  // Overridden for better type safety.
+  // If your plugin doesn't really define any property on Descriptor,
+  // you don't have to do this.
+  @SuppressWarnings("rawtypes")
+  @Override
+  public DescriptorImpl getDescriptor() {
+    return (DescriptorImpl) super.getDescriptor();
+  }
+
+  public AWSEBDeploymentConfig asConfig() {
+    return new AWSEBDeploymentConfig(
+        credentialId,
+        awsRegion,
+        applicationName,
+        environmentName,
+        bucketName,
+        keyPrefix,
+        versionLabelFormat,
+        rootObject,
+        includes,
+        excludes,
+        zeroDowntime,
+        null);
+  }
+
+  @Extension
+  public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+    public DescriptorImpl() {
+
+      load();
+    }
+
+    public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+      return true;
+    }
+
+    public String getDisplayName() {
+      return "AWS Elastic Beanstalk";
+    }
+
+    public AbstractIdCredentialsListBoxModel<?, ?> doFillCredentialIdItems(
+        @AncestorInPath Item owner) {
+      if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
+        return new AWSCredentialsListBoxModel();
+      }
+
+      List<AmazonWebServicesCredentials>
+          creds =
+          CredentialsProvider
+              .lookupCredentials(AmazonWebServicesCredentials.class, owner, ACL.SYSTEM,
+                                 Collections.<DomainRequirement>emptyList());
+
+      return new AWSCredentialsListBoxModel()
+          .withEmptySelection()
+          .withAll(creds);
+    }
+
+    public FormValidation doCheckAwsRegion(@QueryParameter String value) {
+      if (value.contains("$")) {
+        return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+      }
+
+      if (!value.matches("^\\p{Alpha}{2}-(?:gov-)?\\p{Alpha}{4,}-\\d$")) {
+        return FormValidation.error("Doesn't look like a region, like {place}-{cardinal}-{number}");
+      }
+      return FormValidation.ok();
+    }
+
+    public FormValidation doCheckApplicationName(@QueryParameter String value) {
+      if (value.contains("$")) {
+        return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+      }
+
+      int valueLen = value.length();
+      if (valueLen == 0 || valueLen > 100) {
+        return FormValidation.error("Application Names must have between 1-100 characters");
+      }
+      return FormValidation.ok();
+    }
+
+    public FormValidation doCheckEnvironmentName(@QueryParameter String value) {
+      if (value.contains("$")) {
+        return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+      }
+
+      if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,22}$") || value.endsWith("-")) {
+        return FormValidation.error(
+            "Doesn't look like an environment name. Must be from 4 to 23 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+      }
+      return FormValidation.ok();
+    }
+
+    public FormValidation doValidateCredentials(
+        @QueryParameter("credentialId") final String credentialId,
+        @QueryParameter final String awsRegion) {
+      for (String value : Arrays.asList(credentialId, awsRegion)) {
+        if (value.contains("$")) {
+          return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+        }
+      }
+
+      StringWriter stringWriter = new StringWriter();
+      PrintWriter w = new PrintWriter(stringWriter, true);
+
+      try {
+        w.printf("<ul>\n");
+
+        w.printf("<li>Building Client (credentialId: '%s', region: '%s')</li>\n", credentialId,
+                 awsRegion);
+
+        AWSClientFactory factory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
+
+        AmazonS3 amazonS3 = factory.getService(AmazonS3Client.class);
+        String s3Endpoint = factory.getEndpointFor((AmazonS3Client) amazonS3);
+
+        w.printf("<li>Testing Amazon S3 Service (endpoint: %s)</li>\n", s3Endpoint);
+
+        w.printf("<li>Buckets Found: %d</li>\n", amazonS3.listBuckets().size());
+
+        AWSElasticBeanstalk
+            awsElasticBeanstalk =
+            factory.getService(AWSElasticBeanstalkClient.class);
+
+        String
+            awsEBEndpoint =
+            factory.getEndpointFor((AWSElasticBeanstalkClient) awsElasticBeanstalk);
+
+        w.printf("<li>Testing AWS Elastic Beanstalk Service (endpoint: %s)</li>\n",
+                 awsEBEndpoint);
+
+        List<String>
+            applicationList =
+            Lists.transform(awsElasticBeanstalk.describeApplications().getApplications(),
+                            new Function<ApplicationDescription, String>() {
+                              @Override
+                              public String apply(ApplicationDescription input) {
+                                return input.getApplicationName();
+                              }
+                            });
+
+        w.printf("<li>Applications Found: %d (%s)</li>\n", applicationList.size(),
+                 StringUtils.join(applicationList, ", "));
+
+        w.printf("</ul>\n");
+
+        return FormValidation.okWithMarkup(stringWriter.toString());
+      } catch (Exception exc) {
+        return FormValidation.error(exc, "Failure");
+      }
+    }
+
+    public FormValidation doValidateCoordinates(@QueryParameter("credentialId") String credentialId,
+                                                @QueryParameter("awsRegion") String awsRegion,
+                                                @QueryParameter("applicationName") String applicationName,
+                                                @QueryParameter("environmentName") String environmentName)
+        throws Exception {
+      for (String value : Arrays
+          .asList(credentialId, awsRegion, applicationName, environmentName)) {
+        if (value.contains("$")) {
+          return FormValidation.warning("Validation skipped due to parameter usage ('$')");
+        }
+      }
+
+      AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
+
+      AWSElasticBeanstalk
+          awsElasticBeanstalk =
+          clientFactory.getService(AWSElasticBeanstalkClient.class);
+
+      DescribeEnvironmentsResult
+          describeEnvironmentsResult =
+          awsElasticBeanstalk.describeEnvironments(
+              new DescribeEnvironmentsRequest().withApplicationName(applicationName)
+                  .withEnvironmentNames(environmentName));
+
+      if (1 == describeEnvironmentsResult.getEnvironments().size()) {
+        String
+            environmentId =
+            describeEnvironmentsResult.getEnvironments().get(0).getEnvironmentId();
+        return FormValidation.ok("Environment found (environmentId: %s)", environmentId);
+      }
+
+      return FormValidation.error("Environment not found");
+    }
+  }
+
+  public static class AWSCredentialsListBoxModel extends
+                                                 AbstractIdCredentialsListBoxModel<AWSCredentialsListBoxModel, AmazonWebServicesCredentials> {
+
     /**
-     * Credentials name
+     * {@inheritDoc}
      */
-    private String credentialId;
-
-    /**
-     * AWS Region
-     */
-    private String awsRegion;
-
-    /**
-     * Application Name
-     */
-    private String applicationName;
-
-    /**
-     * Environment Name
-     */
-    private String environmentName;
-
-    /**
-     * Bucket Name
-     */
-    private String bucketName;
-
-    /**
-     * Key Format
-     */
-    private String keyPrefix;
-
-    private String versionLabelFormat;
-
-    private String rootObject;
-
-    private String includes;
-
-    private String excludes;
-
-    private boolean zeroDowntime;
-
-    public String getCredentialId() {
-        return credentialId;
+    @NonNull
+    protected String describe(@NonNull AmazonWebServicesCredentials c) {
+      return CredentialsNameProvider.name(c);
     }
-
-    public String getAwsRegion() {
-        return awsRegion;
-    }
-
-    public String getApplicationName() {
-        return applicationName;
-    }
-
-    public String getEnvironmentName() {
-        return environmentName;
-    }
-
-    public String getBucketName() {
-        return bucketName;
-    }
-
-    public String getKeyPrefix() {
-        return keyPrefix;
-    }
-
-    public String getVersionLabelFormat() {
-        return versionLabelFormat;
-    }
-
-    public String getRootObject() {
-        return rootObject;
-    }
-
-    public String getIncludes() {
-        return includes;
-    }
-
-    public String getExcludes() {
-        return excludes;
-    }
-
-    public boolean isZeroDowntime() {
-        return zeroDowntime;
-    }
-
-    @DataBoundConstructor
-    public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName, String environmentName, String bucketName, String keyPrefix, String versionLabelFormat, String rootObject, String includes, String excludes, boolean zeroDowntime) {
-        this.credentialId = credentialId;
-        this.awsRegion = awsRegion;
-        this.applicationName = applicationName;
-        this.environmentName = environmentName;
-        this.bucketName = bucketName;
-        this.keyPrefix = keyPrefix;
-        this.versionLabelFormat = versionLabelFormat;
-        this.rootObject = rootObject;
-        this.includes = includes;
-        this.excludes = excludes;
-        this.zeroDowntime = zeroDowntime;
-    }
-
-    @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-                           BuildListener listener) {
-        try {
-            EnvVars environment = build.getEnvironment(listener);
-
-            AWSEBDeploymentConfig deploymentConfig = asConfig().replacedCopy(new Utils.Replacer(environment));
-
-            PrintStream logger = listener.getLogger();
-
-            FilePath rootFileObject = new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
-
-            final DeployerContext deployerContext = new DeployerContext(deploymentConfig, rootFileObject);
-
-            String argument = Base64.encodeBase64String(SerializationUtils.serialize(deployerContext));
-
-            listener.getLogger().printf("Argument: %s\n", argument);
-
-            //Boolean result = launcher.getChannel().call(new SlaveDeployerCallable(deployerContext));
-            Boolean result = Boolean.TRUE;
-
-            listener.finished(result.booleanValue() ? Result.SUCCESS : Result.FAILURE);
-
-            return true;
-        } catch (Exception exc) {
-            throw new RuntimeException(exc);
-        }
-    }
-
-    public BuildStepMonitor getRequiredMonitorService() {
-        return BuildStepMonitor.NONE;
-    }
-
-    // Overridden for better type safety.
-    // If your plugin doesn't really define any property on Descriptor,
-    // you don't have to do this.
-    @SuppressWarnings("rawtypes")
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
-    }
-
-    public AWSEBDeploymentConfig asConfig() {
-        return new AWSEBDeploymentConfig(
-                credentialId,
-                awsRegion,
-                applicationName,
-                environmentName,
-                bucketName,
-                keyPrefix,
-                versionLabelFormat,
-                rootObject,
-                includes,
-                excludes,
-                zeroDowntime);
-    }
-
-    @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        public DescriptorImpl() {
-
-            load();
-        }
-
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            return true;
-        }
-
-        public String getDisplayName() {
-            return "AWS Elastic Beanstalk";
-        }
-
-        public AbstractIdCredentialsListBoxModel<?, ?> doFillCredentialIdItems(@AncestorInPath Item owner) {
-            if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
-                return new AWSCredentialsListBoxModel();
-            }
-
-            List<AmazonWebServicesCredentials> creds = CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
-
-            return new AWSCredentialsListBoxModel()
-                    .withEmptySelection()
-                    .withAll(creds);
-        }
-
-        public FormValidation doCheckAwsRegion(@QueryParameter String value) {
-            if (value.contains("$"))
-                return FormValidation.warning("Validation skipped due to parameter usage ('$')");
-
-            if (!value.matches("^\\p{Alpha}{2}-(?:gov-)?\\p{Alpha}{4,}-\\d$")) {
-                return FormValidation.error("Doesn't look like a region, like {place}-{cardinal}-{number}");
-            }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckApplicationName(@QueryParameter String value) {
-            if (value.contains("$"))
-                return FormValidation.warning("Validation skipped due to parameter usage ('$')");
-
-            int valueLen = value.length();
-            if (valueLen == 0 || valueLen > 100) {
-                return FormValidation.error("Application Names must have between 1-100 characters");
-            }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckEnvironmentName(@QueryParameter String value) {
-            if (value.contains("$"))
-                return FormValidation.warning("Validation skipped due to parameter usage ('$')");
-
-            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,22}$") || value.endsWith("-")) {
-                return FormValidation.error("Doesn't look like an environment name. Must be from 4 to 23 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
-            }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doValidateCredentials(@QueryParameter("credentialId") final String credentialId,
-                                                    @QueryParameter final String awsRegion) {
-            for (String value : Arrays.asList(credentialId, awsRegion)) {
-                if (value.contains("$"))
-                    return FormValidation.warning("Validation skipped due to parameter usage ('$')");
-            }
-
-            try {
-                LoggerWriter loggerWriter = LoggerWriter.get();
-
-                loggerWriter.printf("<ul>\n");
-
-                loggerWriter.printf("<li>Building Client (credentialId: '%s', region: '%s')</li>\n", credentialId, awsRegion);
-
-                AWSClientFactory factory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
-
-                AmazonS3 amazonS3 = factory.getService(AmazonS3Client.class);
-                String s3Endpoint = factory.getEndpointFor((AmazonS3Client) amazonS3);
-
-                loggerWriter.printf("<li>Testing Amazon S3 Service (endpoint: %s)</li>\n", s3Endpoint);
-
-                loggerWriter.printf("<li>Buckets Found: %d</li>\n", amazonS3.listBuckets().size());
-
-                AWSElasticBeanstalk awsElasticBeanstalk = factory.getService(AWSElasticBeanstalkClient.class);
-
-                String awsEBEndpoint = factory.getEndpointFor((AWSElasticBeanstalkClient) awsElasticBeanstalk);
-
-                loggerWriter.printf("<li>Testing AWS Elastic Beanstalk Service (endpoint: %s)</li>\n", awsEBEndpoint);
-
-                List<String> applicationList = Lists.transform(awsElasticBeanstalk.describeApplications().getApplications(), new Function<ApplicationDescription, String>() {
-                    @Override
-                    public String apply(ApplicationDescription input) {
-                        return input.getApplicationName();
-                    }
-                });
-
-                loggerWriter.printf("<li>Applications Found: %d (%s)</li>\n", applicationList.size(), StringUtils.join(applicationList, ", "));
-
-                loggerWriter.printf("</ul>\n");
-
-                return FormValidation.okWithMarkup(loggerWriter.getResult());
-            } catch (Exception exc) {
-                return FormValidation.error(exc, "Failure");
-            }
-        }
-
-        public FormValidation doValidateCoordinates(@QueryParameter("credentialId") String credentialId,
-                                                    @QueryParameter("awsRegion") String awsRegion,
-                                                    @QueryParameter("applicationName") String applicationName,
-                                                    @QueryParameter("environmentName") String environmentName) throws Exception {
-            for (String value : Arrays.asList(credentialId, awsRegion, applicationName, environmentName)) {
-                if (value.contains("$"))
-                    return FormValidation.warning("Validation skipped due to parameter usage ('$')");
-            }
-
-            AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
-
-            AWSElasticBeanstalk awsElasticBeanstalk = clientFactory.getService(AWSElasticBeanstalkClient.class);
-
-            DescribeEnvironmentsResult describeEnvironmentsResult = awsElasticBeanstalk.describeEnvironments(new DescribeEnvironmentsRequest().withApplicationName(applicationName).withEnvironmentNames(environmentName));
-
-            if (1 == describeEnvironmentsResult.getEnvironments().size()) {
-                String environmentId = describeEnvironmentsResult.getEnvironments().get(0).getEnvironmentId();
-                return FormValidation.ok("Environment found (environmentId: %s)", environmentId);
-            }
-
-            return FormValidation.error("Environment not found");
-        }
-    }
-
-    public static class AWSCredentialsListBoxModel extends AbstractIdCredentialsListBoxModel<AWSCredentialsListBoxModel, AmazonWebServicesCredentials> {
-        /**
-         * {@inheritDoc}
-         */
-        @NonNull
-        protected String describe(@NonNull AmazonWebServicesCredentials c) {
-            return CredentialsNameProvider.name(c);
-        }
-    }
+  }
 
 }

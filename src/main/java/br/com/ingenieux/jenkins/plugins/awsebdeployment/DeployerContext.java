@@ -23,16 +23,12 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
+
+import hudson.FilePath;
+import hudson.remoting.Pipe;
 
 public class DeployerContext implements Constants, Serializable {
     final AWSEBDeploymentConfig deployerConfig;
@@ -44,6 +40,8 @@ public class DeployerContext implements Constants, Serializable {
     transient AWSElasticBeanstalk awseb;
 
     transient PrintWriter logger;
+
+    Pipe loggerOut;
 
     String keyPrefix;
 
@@ -59,8 +57,10 @@ public class DeployerContext implements Constants, Serializable {
 
     String environmentName;
 
-    public DeployerContext(AWSEBDeploymentConfig deployerConfig, FilePath rootFileObject) {
+    public DeployerContext(AWSEBDeploymentConfig deployerConfig, FilePath rootFileObject,
+                           Pipe loggerOut) {
         this.deployerConfig = deployerConfig;
         this.rootFileObject = rootFileObject;
+        this.loggerOut = loggerOut;
     }
 }
