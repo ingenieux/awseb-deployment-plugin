@@ -24,39 +24,74 @@ import java.io.Serializable;
 
 import hudson.FilePath;
 import hudson.remoting.Pipe;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
+@Data
 public class DeployerContext implements Constants, Serializable {
-
+    /**
+     * Deployer Config
+     */
     final AWSEBDeploymentConfig deployerConfig;
 
+    /**
+     * Root File Object
+     */
     final FilePath rootFileObject;
 
+    /**
+     * Output Logger
+     */
+    final Pipe loggerOut;
+
+    /**
+     * S3 Client
+     */
     transient AmazonS3 s3;
 
+    /**
+     * Elastic Beanstalk Client
+     */
     transient AWSElasticBeanstalk awseb;
 
+    /**
+     * Logger Object
+     */
     transient PrintWriter logger;
 
-    Pipe loggerOut;
-
+    /**
+     * Key Prefix
+     */
     String keyPrefix;
 
+    /**
+     * Bucket Name
+     */
     String bucketName;
 
+    /**
+     * Application Name
+     */
     String applicationName;
 
+    /**
+     * Version Label
+     */
     String versionLabel;
 
+    /**
+     * Object Key
+     */
     String objectKey;
 
+    /**
+     * S3 Object Path
+     */
     String s3ObjectPath;
 
+    /**
+     * Environment Name
+     */
     String environmentName;
-
-    public DeployerContext(AWSEBDeploymentConfig deployerConfig, FilePath rootFileObject,
-                           Pipe loggerOut) {
-        this.deployerConfig = deployerConfig;
-        this.rootFileObject = rootFileObject;
-        this.loggerOut = loggerOut;
-    }
 }

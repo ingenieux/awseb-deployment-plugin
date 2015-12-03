@@ -14,7 +14,8 @@
   ~    limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
@@ -98,8 +99,8 @@
         <connection>scm:git:ssh://github.com/jenkinsci/awseb-deployment-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/jenkinsci/awseb-deployment-plugin.git</developerConnection>
         <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -123,6 +124,12 @@
             <artifactId>jetty-util</artifactId>
             <version>6.1.26</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.6</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
