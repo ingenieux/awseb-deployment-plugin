@@ -16,9 +16,7 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang.reflect.ConstructorUtils;
 
 import java.util.List;
 import java.util.ListIterator;
@@ -27,21 +25,6 @@ import java.util.ListIterator;
  * Represents a chain of responsibility of deployment steps
  */
 public class DeployerChain {
-    private final Function<? super Class<? extends DeployerCommand>, ? extends DeployerCommand> CONSTRUCT_COMMAND = new Function<Class<? extends DeployerCommand>, DeployerCommand>() {
-        @Override
-        public DeployerCommand apply(Class<? extends DeployerCommand> input) {
-            try {
-                DeployerCommand cmd = (DeployerCommand) input.newInstance();
-
-                cmd.setDeployerContext(c);
-
-                return cmd;
-            } catch (Exception e) {
-                throw new RuntimeException("Unable to construct: ", e);
-            }
-        }
-    };
-
     List<DeployerCommand> commandList;
 
     final DeployerContext c;
@@ -55,13 +38,22 @@ public class DeployerChain {
 
         ListIterator<DeployerCommand> itCommand = commandList.listIterator();
 
-        boolean done = false;
-        boolean abortedOnPerform = false, abortedOnRelease = false;
+        boolean abortedOnPerform = false;
+        boolean abortedOnRelease = false;
+        boolean mustAbort;
+        Exception resultingException = null;
 
         while (itCommand.hasNext()) {
             DeployerCommand nextCommand = itCommand.next();
 
-            boolean mustAbort = nextCommand.perform();
+            nextCommand.setDeployerContext(c);
+
+            try {
+                mustAbort = nextCommand.perform();
+            } catch (Exception exc) {
+                mustAbort = true;
+                resultingException = exc;
+            }
 
             if (mustAbort) {
                 abortedOnPerform = true;
@@ -72,7 +64,12 @@ public class DeployerChain {
         while (itCommand.hasPrevious()) {
             DeployerCommand prevCommand = itCommand.previous();
 
-            boolean mustAbort = prevCommand.release();
+            try {
+                mustAbort = prevCommand.release();
+            } catch (Exception exc) {
+                mustAbort = true;
+                resultingException = exc;
+            }
 
             if (mustAbort) {
                 abortedOnRelease = true;
@@ -80,27 +77,31 @@ public class DeployerChain {
             }
         }
 
+        if (null != resultingException)
+            throw resultingException;
+
         return (abortedOnPerform || abortedOnRelease);
     }
 
     @SuppressWarnings({"unchecked"})
     private void buildCommandList() {
-        List<Class<? extends DeployerCommand>> commandList = Lists.newArrayList(
-                DeployerCommand.InitLogger.class,
-                DeployerCommand.ValidateParameters.class,
-                DeployerCommand.InitAWS.class,
-                BuildAndUploadArchive.class,
-                DeployerCommand.CreateApplicationVersion.class);
+        this.commandList = Lists.newArrayList(
+                new DeployerCommand.InitLogger(),
+                new DeployerCommand.ValidateParameters(),
+                new DeployerCommand.InitAWS(),
+                new BuildAndUploadArchive(),
+                new DeployerCommand.CreateApplicationVersion()
+        );
 
         if (c.deployerConfig.isZeroDowntime()) {
-            commandList.add(ZeroDowntime.class);
+            commandList.add(new ZeroDowntime());
         } else {
-            commandList.add(DeployerCommand.LookupEnvironmentId.class);
-            commandList.add(DeployerCommand.UpdateApplicationVersion.class);
+            commandList.add(new DeployerCommand.LookupEnvironmentId());
+            commandList.add(new DeployerCommand.UpdateApplicationVersion());
         }
 
-        commandList.add(DeployerCommand.ValidateEnvironmentStatus.class);
+        commandList.add(new DeployerCommand.ValidateEnvironmentStatus(DeployerCommand.WaitFor.Both));
 
-        this.commandList = Lists.newArrayList(Lists.transform(commandList, CONSTRUCT_COMMAND));
+        commandList.add(new DeployerCommand.MarkAsSuccessful());
     }
 }

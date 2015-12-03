@@ -17,13 +17,15 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult;
 import hudson.FilePath;
 import hudson.util.DirScanner;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+
+import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * Builds and Uploads the Zip Archive
@@ -34,6 +36,16 @@ public class BuildAndUploadArchive extends DeployerCommand {
     @Override
     public boolean perform() throws Exception {
         localArchive = getLocalFileObject(getRootFileObject());
+
+        if (isBlank(getBucketName())) {
+            log("bucketName not set. Calling createStorageLocation");
+
+            final CreateStorageLocationResult storageLocation = getAwseb().createStorageLocation();
+
+            log("Using s3 Bucket '%s'", storageLocation.getS3Bucket());
+
+            setBucketName(storageLocation.getS3Bucket());
+        }
 
         setObjectKey(Utils.formatPath("%s/%s-%s.zip", getKeyPrefix(), getApplicationName(),
                 getVersionLabel()));
@@ -49,7 +61,7 @@ public class BuildAndUploadArchive extends DeployerCommand {
 
     @Override
     public boolean release() throws Exception {
-        if (null != localArchive) {
+        if (null != localArchive && localArchive.exists()) {
             log("Cleaning up temporary file %s", localArchive.getAbsolutePath());
 
             FileUtils.deleteQuietly(localArchive);

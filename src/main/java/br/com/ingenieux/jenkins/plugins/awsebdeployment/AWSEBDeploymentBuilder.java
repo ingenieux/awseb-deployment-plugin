@@ -33,7 +33,10 @@ import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
@@ -46,6 +49,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
@@ -144,8 +148,14 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-                           BuildListener listener) {
-        return new DeployerRunner(build, launcher, listener, this).perform();
+                           BuildListener listener) throws IOException {
+        try {
+            final boolean result = new DeployerRunner(build, launcher, listener, this).perform();
+
+            return !result;
+        } catch (Exception exc) {
+            throw new IOException("Deployment Failure", exc);
+        }
     }
 
     public BuildStepMonitor getRequiredMonitorService() {

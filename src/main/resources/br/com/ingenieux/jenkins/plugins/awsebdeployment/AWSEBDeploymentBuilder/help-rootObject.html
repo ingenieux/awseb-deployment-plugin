@@ -15,7 +15,14 @@
   -->
 
 <div>
-  <p>Root Path to Grab for Artifacts, like '.' or 'target/myapp/'.</p>
-  <p>It could be either a path to a zip file or a directory.</p>
-  <p>If its a directory, includes and excludes are used to build the zip file</p>
+  <p>Workspace-relative path of the artifact file to upload (if it's a file), or if it's a directory, the base directory
+    to build the zip/war against</p>
+
+  <p>Examples:</p>
+  <ul>
+    <li>File, like <code>target/mywebapp.war</code>: The war file will be uploaded</li>
+    <li>A Directory, like '<code>.</code>' or '<code>target/war</code>': A Zip file will be built and uploaded instead
+      (using includes and excludes).
+    </li>
+  </ul>
 </div>

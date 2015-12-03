@@ -71,10 +71,6 @@
         <f:entry title="S3 Key Prefix" field="keyPrefix">
             <f:textbox/>
         </f:entry>
-
-        <!-- Not today :/
-        <f:validateButton method="validateUpload" title="Validate Upload" with="credentialId,awsRegion,applicationName,environmentName"/>
-        -->
     </f:section>
 
     <f:section title="Version and Deployment">
@@ -85,5 +81,9 @@
         <f:entry title="Zero downtime?" field="zeroDowntime">
             <f:checkbox/>
         </f:entry>
+
+
+        <f:validateButton method="validateUpload" title="Validate Upload"
+                          with="applicationName,bucketName,keyPrefix,versionLabelFormat"/>
     </f:section>
 </j:jelly>

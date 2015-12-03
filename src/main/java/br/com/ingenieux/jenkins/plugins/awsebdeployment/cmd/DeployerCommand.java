@@ -22,9 +22,7 @@ import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Delegate;
 import org.apache.commons.lang.Validate;
 
@@ -62,6 +60,12 @@ public class DeployerCommand implements Constants {
         return false;
     }
 
+    /**
+     * Logger Helper
+     *
+     * @param message message
+     * @param args    args
+     */
     protected void log(String message, Object... args) {
         getLogger().printf(message, args);
         getLogger().println();
@@ -73,6 +77,11 @@ public class DeployerCommand implements Constants {
     public static class InitLogger extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
+            /**
+             * When Running Remotely, we use loggerOut pipe.
+             *
+             * Locally, we already set logger instance
+             */
             if (null == getLogger() && null != getLoggerOut())
                 setLogger(new PrintStream(getLoggerOut().getOut(), true));
 
@@ -96,7 +105,7 @@ public class DeployerCommand implements Constants {
 
             Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
             Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");
-            Validate.notEmpty(getBucketName(), "Empty/blank bucketName parameter");
+
             Validate.notEmpty(getVersionLabel(), "Empty/blank versionLabel parameter");
 
             return false;
@@ -104,7 +113,7 @@ public class DeployerCommand implements Constants {
     }
 
     /**
-     * Represents the AWS Client Creation
+     * Builds the AWS Clients altogether
      */
     public static class InitAWS extends DeployerCommand {
         @Override
@@ -125,6 +134,9 @@ public class DeployerCommand implements Constants {
         }
     }
 
+    /**
+     * Creates an Application Version
+     */
     public static class CreateApplicationVersion extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
@@ -137,10 +149,17 @@ public class DeployerCommand implements Constants {
                     .withSourceBundle(new S3Location(getBucketName(), getObjectKey()))
                     .withVersionLabel(getVersionLabel());
 
+            final CreateApplicationVersionResult result = getAwseb().createApplicationVersion(cavRequest);
+
+            log("Created version: %s", result.getApplicationVersion().getVersionLabel());
+
             return false;
         }
     }
 
+    /**
+     * Lookups Environment Id - Aborting Deployment if not found.
+     */
     public static class LookupEnvironmentId extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
@@ -163,6 +182,9 @@ public class DeployerCommand implements Constants {
         }
     }
 
+    /**
+     * Updates de Application Version
+     */
     public static class UpdateApplicationVersion extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
@@ -178,12 +200,27 @@ public class DeployerCommand implements Constants {
         }
     }
 
+    public enum WaitFor {
+        Status,
+        Health,
+        Both
+    }
+
+    /**
+     * Waits for the Environment to be Green and Available
+     */
     public static class ValidateEnvironmentStatus extends DeployerCommand {
+        final WaitFor waitFor;
+
+        public ValidateEnvironmentStatus(WaitFor waitFor) {
+            this.waitFor = waitFor;
+        }
+
         @Override
         public boolean perform() throws Exception {
-            for (int nAttempt = 1; nAttempt <= DeployerContext.MAX_ATTEMPTS; nAttempt++) {
-                log("Checking health of environmentId %s attempt %d/%s", getEnvironmentId(), nAttempt,
-                        DeployerContext.MAX_ATTEMPTS);
+            for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
+                log("Checking health/status of environmentId %s attempt %d/%s", getEnvironmentId(), nAttempt,
+                        MAX_ATTEMPTS);
 
                 List<EnvironmentDescription> environments =
                         getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
@@ -199,8 +236,28 @@ public class DeployerCommand implements Constants {
 
                 EnvironmentDescription environmentDescription = environments.get(0);
 
-                if (GREEN_HEALTH.equals(environmentDescription.getHealth()))
-                    return false;
+                final boolean bHealthyP = GREEN_HEALTH.equals(environmentDescription.getHealth());
+                final boolean bReadyP = STATUS_READY.equals(environmentDescription.getStatus());
+
+                if (WaitFor.Health == waitFor) {
+                    if (bHealthyP) {
+                        log("Environment Health is 'Green'. Moving on.");
+
+                        return false;
+                    }
+                } else if (WaitFor.Status == waitFor) {
+                    if (bReadyP) {
+                        log("Environment Status is 'Ready'. Moving on.");
+
+                        return false;
+                    }
+                } else if (WaitFor.Both == waitFor) {
+                    if (bReadyP && bHealthyP) {
+                        log("Environment Status is 'Ready' and Health is 'Green'. Moving on.");
+
+                        return false;
+                    }
+                }
 
                 Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME));
             }
@@ -208,6 +265,20 @@ public class DeployerCommand implements Constants {
             log("Environment Update timed-out. Aborting.");
 
             return true;
+        }
+    }
+
+    /**
+     * Marks the deployment as successful
+     */
+    public static class MarkAsSuccessful extends DeployerCommand {
+        @Override
+        public boolean perform() throws Exception {
+            log("Deployment marked as 'successful'. Starting post-deployment cleanup.");
+
+            setSuccessfulP(true);
+
+            return false;
         }
     }
 

@@ -18,7 +18,6 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.google.common.collect.Lists;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,28 +25,14 @@ import java.util.concurrent.TimeUnit;
 
 public class ZeroDowntime extends DeployerCommand {
     List<String> environmentNames;
-    private String environmentId;
 
-    private List<String> generateEnvironmentNames() {
-        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName());
-
-        boolean lengthyP = getEnvironmentName().length() > (DeployerContext.MAX_ENVIRONMENT_NAME_LENGTH - 2);
-
-        String newEnvironmentName = getEnvironmentName();
-
-        if (lengthyP)
-            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
-
-        newEnvironmentNames.add(newEnvironmentName + "-2");
-
-        return newEnvironmentNames;
-    }
+    String environmentId;
 
     @Override
     public boolean perform() throws Exception {
         environmentNames = generateEnvironmentNames();
 
-        environmentId = getEnvironmentId(environmentNames);
+        environmentId = lookupEnvironmentIds(environmentNames);
 
         String templateName = createConfigurationTemplate(environmentId);
 
@@ -62,6 +47,21 @@ public class ZeroDowntime extends DeployerCommand {
         return false;
     }
 
+    private List<String> generateEnvironmentNames() {
+        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName());
+
+        boolean lengthyP = getEnvironmentName().length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
+
+        String newEnvironmentName = getEnvironmentName();
+
+        if (lengthyP)
+            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
+
+        newEnvironmentNames.add(newEnvironmentName + "-2");
+
+        return newEnvironmentNames;
+    }
+
     private String createEnvironment(String versionLabel, String templateName,
                                      List<String> environmentNames) {
         log("Creating environment based on application %s/%s from version %s and configuration template %s",
@@ -71,7 +71,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         for (String environmentName : environmentNames) {
             try {
-                getEnvironmentId(Collections.singletonList(environmentName));
+                lookupEnvironmentIds(Collections.singletonList(environmentName));
             } catch (InvalidEnvironmentsSizeException e) {
                 newEnvironmentName = environmentName;
 
@@ -105,7 +105,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         getAwseb().swapEnvironmentCNAMEs(request);
 
-        Thread.sleep(TimeUnit.SECONDS.toMillis(DeployerContext.SLEEP_TIME)); //So the CNAMEs will swap
+        Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME / 6)); //So the CNAMEs will swap
     }
 
     private String createConfigurationTemplate(String environmentId) {
@@ -119,7 +119,7 @@ public class ZeroDowntime extends DeployerCommand {
         return getAwseb().createConfigurationTemplate(request).getTemplateName();
     }
 
-    private String getEnvironmentId(List<String> environmentNames) throws InvalidEnvironmentsSizeException {
+    private String lookupEnvironmentIds(List<String> environmentNames) throws InvalidEnvironmentsSizeException {
         DescribeEnvironmentsResult environments = getAwseb()
                 .describeEnvironments(new DescribeEnvironmentsRequest()
                         .withApplicationName(getApplicationName())
@@ -136,9 +136,15 @@ public class ZeroDowntime extends DeployerCommand {
 
     @Override
     public boolean release() throws Exception {
-        swapEnvironmentCnames(environmentId, getEnvironmentId());
+        if (isSuccessfulP()) {
+            swapEnvironmentCnames(environmentId, getEnvironmentId());
 
-        terminateEnvironment(environmentId);
+            terminateEnvironment(environmentId);
+        } else {
+            log("Rolling back on candidate environmentId '%s'", getEnvironmentId());
+
+            terminateEnvironment(getEnvironmentId());
+        }
 
         return false;
     }
