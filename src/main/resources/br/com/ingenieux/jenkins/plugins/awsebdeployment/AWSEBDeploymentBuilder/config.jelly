@@ -83,7 +83,7 @@
         </f:entry>
 
 
-        <f:validateButton method="validateUpload" title="Validate Upload"
+        <f:validateButton method="validateUpload" title="Explain Upload"
                           with="applicationName,bucketName,keyPrefix,versionLabelFormat"/>
     </f:section>
 </j:jelly>

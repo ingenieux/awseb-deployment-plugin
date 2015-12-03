@@ -56,6 +56,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang.StringUtils.defaultIfBlank;
+
 /**
  * AWS Elastic Beanstalk Deployment
  */
@@ -346,6 +349,22 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             }
 
             return FormValidation.error("Environment not found");
+        }
+
+        public FormValidation doValidateUpload(@QueryParameter("applicationName") String applicationName,
+                                               @QueryParameter("bucketName") String bucketName,
+                                               @QueryParameter("keyPrefix") String keyPrefix,
+                                               @QueryParameter("versionLabelFormat") String versionLabelFormat) {
+            String targetPath = format("s3://%s/%s/%s-%s.zip",
+                    defaultIfBlank(bucketName, "[default account bucket for region]"),
+                    defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
+                    defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
+                    defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>")
+            );
+
+            final String resultingMessage = format("Your object will be uploaded to S3 as: <code>%s</code> (<i>note replacements will apply</i>)", targetPath);
+
+            return FormValidation.okWithMarkup(resultingMessage);
         }
     }
 
