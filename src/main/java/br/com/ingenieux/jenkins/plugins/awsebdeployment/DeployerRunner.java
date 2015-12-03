@@ -16,6 +16,8 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import java.io.PrintStream;
+
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerChain;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import hudson.EnvVars;
@@ -27,8 +29,6 @@ import hudson.remoting.Future;
 import hudson.remoting.LocalChannel;
 import hudson.remoting.Pipe;
 import hudson.remoting.VirtualChannel;
-
-import java.io.PrintStream;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
@@ -81,7 +81,6 @@ public class DeployerRunner {
 
             return deployerChain.perform();
         } else {
-
             final Future<Boolean>
                     booleanFuture =
                     channel.callAsync(new SlaveDeployerCallable(deployerContext));
@@ -94,7 +93,7 @@ public class DeployerRunner {
                     continue;
                 }
 
-                int nRead = outputPipe.getIn().read(buf);
+                int nRead = outputPipe.getIn().read(buf, 0, Math.min(buf.length, outputPipe.getIn().available()));
 
                 if (nRead <= 0) {
                     Thread.sleep(200);
@@ -104,10 +103,12 @@ public class DeployerRunner {
                 logger.write(buf, 0, nRead);
             } while (!booleanFuture.isDone());
 
-            { // One last fix
-                Thread.sleep(1000);
+            Thread.sleep(1000);
 
-                int nRead = outputPipe.getIn().read(buf);
+            if (outputPipe.getIn().available() > 0) {
+                // One last fix
+
+                int nRead = outputPipe.getIn().read(buf, 0, outputPipe.getIn().available());
 
                 logger.write(buf, 0, nRead);
             }
