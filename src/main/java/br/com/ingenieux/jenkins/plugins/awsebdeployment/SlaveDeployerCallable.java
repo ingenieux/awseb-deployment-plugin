@@ -19,17 +19,25 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-public interface Constants {
+import java.io.Serializable;
 
-    String DEFAULT_REGION = "us-east-1";
+import jenkins.security.MasterToSlaveCallable;
 
-    int MAX_ATTEMPTS = 15;
+public class SlaveDeployerCallable extends MasterToSlaveCallable<Boolean, Exception>
+    implements Serializable {
 
-    int SLEEP_TIME = 90;
+  private static final long serialVersionUID = 1L;
 
-    int MAX_ENVIRONMENT_NAME_LENGTH = 23;
+  private final DeployerContext deployerContext;
 
-    String GREEN_HEALTH = "Green";
+  public SlaveDeployerCallable(DeployerContext deployerContext) {
+    this.deployerContext = deployerContext;
+  }
 
-    String DEFAULT_VERSION = "UNKNOWN";
+  @Override
+  public Boolean call() throws Exception {
+    DeployerChain deployerChain = new DeployerChain(deployerContext);
+
+    return deployerChain.perform();
+  }
 }

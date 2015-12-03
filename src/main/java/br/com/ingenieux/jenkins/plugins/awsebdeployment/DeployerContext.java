@@ -1,51 +1,46 @@
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
-
 /*
- * #%L
- * AWS Elastic Beanstalk Deployment Plugin
- * %%
- * Copyright (C) 2013 ingenieux Labs
- * %%
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #L%
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
+package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
-import hudson.EnvVars;
+
+import java.io.PrintWriter;
+import java.io.Serializable;
+
 import hudson.FilePath;
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.remoting.Pipe;
 
-import java.io.IOException;
-import java.io.PrintStream;
+public class DeployerContext implements Constants, Serializable {
 
-public class DeployerContext implements Constants {
-    final AWSEBDeploymentBuilder deployerConfig;
-
-	final PrintStream logger;
-
-    final Launcher launcher;
-
-    final Utils.Replacer replacer;
+    final AWSEBDeploymentConfig deployerConfig;
 
     final FilePath rootFileObject;
 
-    AmazonS3 s3;
+    transient AmazonS3 s3;
 
-    AWSElasticBeanstalk awseb;
+    transient AWSElasticBeanstalk awseb;
+
+    transient PrintWriter logger;
+
+    Pipe loggerOut;
 
     String keyPrefix;
 
@@ -59,24 +54,12 @@ public class DeployerContext implements Constants {
 
     String s3ObjectPath;
 
-    EnvVars env;
-
     String environmentName;
 
-    BuildListener listener;
-
-    public DeployerContext(AWSEBDeploymentBuilder o,
-                           AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-        this.env = build.getEnvironment(listener);
-
-        this.replacer = new Utils.Replacer(this.env);
-
-        this.deployerConfig = o.replacedCopy(this.replacer);
-
-		this.logger = listener.getLogger();
-        this.launcher = launcher;
-        this.listener = listener;
-
-        this.rootFileObject = new FilePath(build.getWorkspace(), this.deployerConfig.getRootObject());
+    public DeployerContext(AWSEBDeploymentConfig deployerConfig, FilePath rootFileObject,
+                           Pipe loggerOut) {
+        this.deployerConfig = deployerConfig;
+        this.rootFileObject = rootFileObject;
+        this.loggerOut = loggerOut;
     }
 }
