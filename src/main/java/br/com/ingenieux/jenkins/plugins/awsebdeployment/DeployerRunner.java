@@ -16,9 +16,6 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import java.io.PrintStream;
-
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerChain;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -26,9 +23,6 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.remoting.Future;
-import hudson.remoting.LocalChannel;
-import hudson.remoting.Pipe;
-import hudson.remoting.VirtualChannel;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
@@ -55,65 +49,23 @@ public class DeployerRunner {
                 deploymentConfig =
                 deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(environment));
 
-        PrintStream logger = listener.getLogger();
-
         FilePath
                 rootFileObject =
                 new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
 
-        Pipe outputPipe = Pipe.createRemoteToLocal();
-
         final DeployerContext
                 deployerContext =
-                new DeployerContext(deploymentConfig, rootFileObject, outputPipe);
+                new DeployerContext(deploymentConfig, rootFileObject, listener);
 
         if (!isBlank(deploymentConfig.getCredentialId())) {
             deploymentConfig.setCredentials(
                     AWSClientFactory.lookupNamedCredential(deploymentConfig.getCredentialId()));
         }
 
-        VirtualChannel channel = launcher.getChannel();
+        final Future<Boolean>
+                booleanFuture =
+                launcher.getChannel().callAsync(new SlaveDeployerCallable(deployerContext));
 
-        if (LocalChannel.class.isAssignableFrom(channel.getClass())) {
-            deployerContext.setLogger(listener.getLogger());
-
-            DeployerChain deployerChain = new DeployerChain(deployerContext);
-
-            return deployerChain.perform();
-        } else {
-            final Future<Boolean>
-                    booleanFuture =
-                    channel.callAsync(new SlaveDeployerCallable(deployerContext));
-
-            byte[] buf = new byte[8192];
-
-            do {
-                if (outputPipe.getIn().available() <= 0) {
-                    Thread.sleep(200);
-                    continue;
-                }
-
-                int nRead = outputPipe.getIn().read(buf, 0, Math.min(buf.length, outputPipe.getIn().available()));
-
-                if (nRead <= 0) {
-                    Thread.sleep(200);
-                    continue;
-                }
-
-                logger.write(buf, 0, nRead);
-            } while (!booleanFuture.isDone());
-
-            Thread.sleep(1000);
-
-            if (outputPipe.getIn().available() > 0) {
-                // One last fix
-
-                int nRead = outputPipe.getIn().read(buf, 0, outputPipe.getIn().available());
-
-                logger.write(buf, 0, nRead);
-            }
-
-            return booleanFuture.get();
-        }
+        return booleanFuture.get();
     }
 }

@@ -91,8 +91,8 @@ public class DeployerCommand implements Constants {
              *
              * Locally, we already set logger instance
              */
-            if (null == getLogger() && null != getLoggerOut())
-                setLogger(new PrintStream(getLoggerOut().getOut(), true));
+            if (null == getLogger())
+                setLogger(getListener().getLogger());
 
             log("AWSEB Deployment Plugin Version %s", Utils.getVersion());
 
