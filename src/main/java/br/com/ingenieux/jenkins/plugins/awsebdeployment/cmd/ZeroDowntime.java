@@ -38,6 +38,10 @@ public class ZeroDowntime extends DeployerCommand {
 
         try {
             environmentId = lookupEnvironmentIds(environmentNames);
+        } catch (InvalidDeploymentTypeException exc) {
+            log("Zero Downtime isn't valid for Worker Environments.");
+
+            return true;
         } catch (InvalidEnvironmentsSizeException exc) {
             log("Unable to find any suitable environment. Aborting.");
 
@@ -73,7 +77,7 @@ public class ZeroDowntime extends DeployerCommand {
     }
 
     private String createEnvironment(String versionLabel, String templateName,
-                                     List<String> environmentNames) {
+                                     List<String> environmentNames) throws InvalidDeploymentTypeException {
         log("Creating environment based on application %s/%s from version %s and configuration template %s",
                 getApplicationName(), getEnvironmentName(), versionLabel, templateName);
 
@@ -137,7 +141,7 @@ public class ZeroDowntime extends DeployerCommand {
         return getAwseb().createConfigurationTemplate(request).getTemplateName();
     }
 
-    private String lookupEnvironmentIds(List<String> environmentNames) throws InvalidEnvironmentsSizeException {
+    private String lookupEnvironmentIds(List<String> environmentNames) throws InvalidEnvironmentsSizeException, InvalidDeploymentTypeException {
         DescribeEnvironmentsResult environments = getAwseb()
                 .describeEnvironments(new DescribeEnvironmentsRequest()
                         .withApplicationName(getApplicationName())
@@ -145,6 +149,10 @@ public class ZeroDowntime extends DeployerCommand {
 
         for (EnvironmentDescription env : environments.getEnvironments()) {
             if (environmentNames.contains(env.getEnvironmentName())) {
+                if (WORKER_ENVIRONMENT_TYPE.equals(env.getTier().getName())) {
+                    throw new InvalidDeploymentTypeException();
+                }
+
                 return env.getEnvironmentId();
             }
         }
@@ -173,6 +181,14 @@ public class ZeroDowntime extends DeployerCommand {
         log("Excluding template name '%s'", templateName);
 
         getAwseb().deleteConfigurationTemplate(new DeleteConfigurationTemplateRequest(getApplicationName(), templateName));
+    }
+
+    public static class InvalidDeploymentTypeException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        public InvalidDeploymentTypeException() {
+            super("Invalid Deployment Type");
+        }
     }
 
     public static class InvalidEnvironmentsSizeException extends Exception {

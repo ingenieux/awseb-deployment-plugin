@@ -30,4 +30,6 @@ public interface Constants {
     String STATUS_READY = "Ready";
 
     String DEFAULT_VERSION = "UNKNOWN";
+
+    String WORKER_ENVIRONMENT_TYPE = "Worker";
 }
