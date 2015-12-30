@@ -19,7 +19,10 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import lombok.*;
 
+import java.io.IOException;
 import java.io.Serializable;
+
+import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -94,7 +97,7 @@ public class AWSEBDeploymentConfig implements Serializable {
    * @param r replacer
    * @return replaced copy
    */
-  public AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) {
+  public AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) throws MacroEvaluationException, IOException, InterruptedException {
     return new AWSEBDeploymentConfig(
         r.r(this.getCredentialId()),
         r.r(this.getAwsRegion()),
