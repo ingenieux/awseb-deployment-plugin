@@ -17,7 +17,6 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
-import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -43,11 +42,9 @@ public class DeployerRunner {
     }
 
     public boolean perform() throws Exception {
-        EnvVars environment = build.getEnvironment(listener);
-
         AWSEBDeploymentConfig
                 deploymentConfig =
-                deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(environment));
+                deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(build, listener));
 
         FilePath
                 rootFileObject =
