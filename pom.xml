@@ -102,8 +102,8 @@
     </build>
 
     <scm>
-        <connection>scm:git:ssh://github.com/jenkinsci/awseb-deployment-plugin.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/awseb-deployment-plugin.git</developerConnection>
+        <connection>scm:git:ssh://github.com/ingenieux/awseb-deployment-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/ingenieux/awseb-deployment-plugin.git</developerConnection>
         <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
         <tag>HEAD</tag>
     </scm>
