@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <!--
   ~ Copyright 2011 ingenieux Labs
   ~
@@ -13,7 +14,6 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
-
 <div>
   This Plugin allows you to deploy into AWS Elastic Beanstalk
 </div>
