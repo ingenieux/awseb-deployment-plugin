@@ -30,6 +30,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
+import hudson.ProxyConfiguration;
 import org.apache.commons.lang.reflect.ConstructorUtils;
 import org.apache.commons.lang.reflect.FieldUtils;
 
@@ -73,6 +74,16 @@ public class AWSClientFactory implements Constants {
 
     ClientConfiguration clientConfig = new ClientConfiguration();
 
+    Jenkins jenkins = Jenkins.getInstance();
+    if (jenkins != null && jenkins.proxy != null) {
+       ProxyConfiguration proxyConfig = jenkins.proxy;
+       clientConfig.setProxyHost(proxyConfig.name);
+       clientConfig.setProxyPort(proxyConfig.port);
+       if (proxyConfig.getUserName() != null) {
+          clientConfig.setProxyUsername(proxyConfig.getUserName());
+          clientConfig.setProxyPassword(proxyConfig.getPassword());
+      }
+    }
     clientConfig.setUserAgent("ingenieux CloudButler/" + Utils.getVersion());
 
     return new AWSClientFactory(credentials, clientConfig, awsRegion);
