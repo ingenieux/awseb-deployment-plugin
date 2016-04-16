@@ -277,9 +277,9 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             PrintWriter w = new PrintWriter(stringWriter, true);
 
             try {
-                w.printf("<ul>\n");
+                w.printf("<ul>%n");
 
-                w.printf("<li>Building Client (credentialId: '%s', region: '%s')</li>\n", credentialId,
+                w.printf("<li>Building Client (credentialId: '%s', region: '%s')</li>%n", credentialId,
                         awsRegion);
 
                 AWSClientFactory factory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
@@ -287,9 +287,9 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 AmazonS3 amazonS3 = factory.getService(AmazonS3Client.class);
                 String s3Endpoint = factory.getEndpointFor((AmazonS3Client) amazonS3);
 
-                w.printf("<li>Testing Amazon S3 Service (endpoint: %s)</li>\n", s3Endpoint);
+                w.printf("<li>Testing Amazon S3 Service (endpoint: %s)</li>%n", s3Endpoint);
 
-                w.printf("<li>Buckets Found: %d</li>\n", amazonS3.listBuckets().size());
+                w.printf("<li>Buckets Found: %d</li>%n", amazonS3.listBuckets().size());
 
                 AWSElasticBeanstalk
                         awsElasticBeanstalk =
@@ -299,7 +299,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                         awsEBEndpoint =
                         factory.getEndpointFor((AWSElasticBeanstalkClient) awsElasticBeanstalk);
 
-                w.printf("<li>Testing AWS Elastic Beanstalk Service (endpoint: %s)</li>\n",
+                w.printf("<li>Testing AWS Elastic Beanstalk Service (endpoint: %s)</li>%n",
                         awsEBEndpoint);
 
                 List<String>
@@ -312,10 +312,10 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                     }
                                 });
 
-                w.printf("<li>Applications Found: %d (%s)</li>\n", applicationList.size(),
+                w.printf("<li>Applications Found: %d (%s)</li>%n", applicationList.size(),
                         StringUtils.join(applicationList, ", "));
 
-                w.printf("</ul>\n");
+                w.printf("</ul>%n");
 
                 return FormValidation.okWithMarkup(stringWriter.toString());
             } catch (Exception exc) {

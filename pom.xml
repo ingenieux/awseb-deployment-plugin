@@ -25,7 +25,7 @@
 
     <groupId>br.com.ingenieux.jenkins.plugins</groupId>
     <artifactId>awseb-deployment-plugin</artifactId>
-    <version>0.3.6-SNAPSHOT</version>
+    <version>0.3.6</version>
     <packaging>hpi</packaging>
 
     <name>AWS Elastic Beanstalk Deployment Plugin</name>
@@ -105,7 +105,7 @@
         <connection>scm:git:ssh://github.com/ingenieux/awseb-deployment-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/ingenieux/awseb-deployment-plugin.git</developerConnection>
         <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
-        <tag>HEAD</tag>
+        <tag>awseb-deployment-plugin-0.3.6</tag>
     </scm>
 
     <dependencies>
