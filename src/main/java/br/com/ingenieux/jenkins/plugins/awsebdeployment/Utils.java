@@ -24,6 +24,7 @@ import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 import hudson.model.AbstractBuild;
@@ -43,10 +44,10 @@ public class Utils implements Constants {
 
     public static String getVersion() {
         if (DEFAULT_VERSION.equals(VERSION)) {
-            try {
+            try (InputStream is = Utils.class.getResourceAsStream("version.properties")) {
                 Properties p = new Properties();
 
-                p.load(Utils.class.getResourceAsStream("version.properties"));
+                p.load(is);
 
                 VERSION = p.getProperty("awseb-deployer-plugin.version");
 

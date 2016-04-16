@@ -18,6 +18,8 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult;
+
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 import hudson.FilePath;
 import hudson.util.DirScanner;
 import org.apache.commons.io.FileUtils;
@@ -30,6 +32,7 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 /**
  * Builds and Uploads the Zip Archive
  */
+@SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS","OBL_UNSATISFIED_OBLIGATION"})
 public class BuildAndUploadArchive extends DeployerCommand {
     private File localArchive = null;
 

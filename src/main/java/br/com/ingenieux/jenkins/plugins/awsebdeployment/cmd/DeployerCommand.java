@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 import lombok.Data;
 import lombok.experimental.Delegate;
 
@@ -218,6 +219,7 @@ public class DeployerCommand implements Constants {
     /**
      * Waits for the Environment to be Green and Available
      */
+    @SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
     public static class WaitForEnvironment extends DeployerCommand {
         final WaitFor waitFor;
 

@@ -23,8 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
+
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
+@SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
 public class ZeroDowntime extends DeployerCommand {
     List<String> environmentNames;
 
