@@ -137,11 +137,24 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Getter
     private boolean zeroDowntime;
 
+    /**
+     * Check Health
+     */
+    @Getter
+    private boolean checkHealth;
+
+    /**
+     * Check Application Version
+     */
+    @Getter
+    private boolean checkApplicationVersion;
+
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime) {
+                                  String excludes, boolean zeroDowntime, boolean checkHealth,
+                                  boolean checkApplicationVersion) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
@@ -153,6 +166,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.includes = includes;
         this.excludes = excludes;
         this.zeroDowntime = zeroDowntime;
+        this.checkHealth = checkHealth;
+        this.checkApplicationVersion = checkApplicationVersion;
     }
 
     @Override
@@ -193,6 +208,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 includes,
                 excludes,
                 zeroDowntime,
+                checkHealth,
+                checkApplicationVersion,
                 null);
     }
 

@@ -222,9 +222,11 @@ public class DeployerCommand implements Constants {
     @SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
     public static class WaitForEnvironment extends DeployerCommand {
         final WaitFor waitFor;
+        final boolean checkApplicationVersion;
 
-        public WaitForEnvironment(WaitFor waitFor) {
+        public WaitForEnvironment(WaitFor waitFor, boolean checkApplicationVersion) {
             this.waitFor = waitFor;
+            this.checkApplicationVersion = checkApplicationVersion;
         }
 
         @Override
@@ -253,19 +255,34 @@ public class DeployerCommand implements Constants {
 
                 if (WaitFor.Health == waitFor) {
                     if (bHealthyP) {
-                        log("Environment Health is 'Green'. Moving on.");
+                        if (checkApplicationVersion) {
+                            log("Environment Health is 'Green'. Checking Application Version");
+                            return checkVersionLabel(environmentDescription.getVersionLabel());
+                        } else {
+                            log("Environment Health is 'Green'. Moving on.");
+                        }
 
                         return false;
                     }
                 } else if (WaitFor.Status == waitFor) {
                     if (bReadyP) {
-                        log("Environment Status is 'Ready'. Moving on.");
+                        if (checkApplicationVersion) {
+                            log("Environment Status is 'Ready'. Checking Application Version");
+                            return checkVersionLabel(environmentDescription.getVersionLabel());
+                        } else {
+                            log("Environment Status is 'Ready'. Moving on.");
+                        }
 
                         return false;
                     }
                 } else if (WaitFor.Both == waitFor) {
                     if (bReadyP && bHealthyP) {
-                        log("Environment Status is 'Ready' and Health is 'Green'. Moving on.");
+                        if (checkApplicationVersion) {
+                            log("Environment Status is 'Ready' and Health is 'Green'. Checking Application Version.");
+                            return checkVersionLabel(environmentDescription.getVersionLabel());
+                        } else {
+                            log("Environment Status is 'Ready' and Health is 'Green'. Moving on.");
+                        }
 
                         return false;
                     }
@@ -277,6 +294,16 @@ public class DeployerCommand implements Constants {
             log("Environment Update timed-out. Aborting.");
 
             return true;
+        }
+
+        private boolean checkVersionLabel(String deployedVersionLabel) throws Exception {
+            if (getVersionLabel().equals(deployedVersionLabel)) {
+                log("Application version correct!");
+            } else {
+                log("Application version incorrect, deploy was rolled back.");
+                return true;
+            }
+            return false;
         }
     }
 
@@ -325,7 +352,7 @@ public class DeployerCommand implements Constants {
                     log("Environment Update Aborted. Proceeding.");
                 }
 
-                WaitForEnvironment waitForStatus = new WaitForEnvironment(WaitFor.Status);
+                WaitForEnvironment waitForStatus = new WaitForEnvironment(WaitFor.Status, false);
 
                 waitForStatus.setDeployerContext(c);
 

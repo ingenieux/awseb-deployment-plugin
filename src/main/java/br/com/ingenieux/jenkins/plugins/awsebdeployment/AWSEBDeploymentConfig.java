@@ -87,6 +87,16 @@ public class AWSEBDeploymentConfig implements Serializable {
   private boolean zeroDowntime;
 
   /**
+   * Check Health
+   */
+  private boolean checkHealth;
+
+  /**
+   * Check Application Version
+   */
+  private boolean checkApplicationVersion;
+
+  /**
    * Credentials
    */
   private AmazonWebServicesCredentials credentials;
@@ -110,6 +120,8 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getIncludes()),
         r.r(this.getExcludes()),
         this.isZeroDowntime(),
+        this.isCheckHealth(),
+        this.isCheckApplicationVersion(),
         this.credentials
     );
   }

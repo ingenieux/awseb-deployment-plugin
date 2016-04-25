@@ -96,12 +96,16 @@ public class DeployerChain {
 
             commandList.add(new DeployerCommand.AbortPendingUpdates());
 
-            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status));
+            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status, false));
 
             commandList.add(new DeployerCommand.UpdateApplicationVersion());
         }
 
-        commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both));
+        if (c.deployerConfig.isCheckHealth()) {
+            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both, c.deployerConfig.isCheckApplicationVersion()));
+        } else {
+            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status, c.deployerConfig.isCheckApplicationVersion()));
+        }
 
         commandList.add(new DeployerCommand.MarkAsSuccessful());
     }
