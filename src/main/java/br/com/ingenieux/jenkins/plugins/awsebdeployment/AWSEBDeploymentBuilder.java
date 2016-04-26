@@ -19,8 +19,20 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
+import static java.lang.String.format;
+import static org.apache.commons.lang.StringUtils.defaultIfBlank;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
@@ -34,18 +46,8 @@ import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -61,9 +63,6 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import lombok.Getter;
-
-import static java.lang.String.format;
-import static org.apache.commons.lang.StringUtils.defaultIfBlank;
 
 /**
  * AWS Elastic Beanstalk Deployment
@@ -257,9 +256,9 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
             }
 
-            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,22}$") || value.endsWith("-")) {
+            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
                 return FormValidation.error(
-                        "Doesn't look like an environment name. Must be from 4 to 23 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+                        "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
             }
             return FormValidation.ok();
         }
