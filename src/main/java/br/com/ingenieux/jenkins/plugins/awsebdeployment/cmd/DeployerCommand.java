@@ -27,6 +27,7 @@ import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
 import com.amazonaws.services.elasticbeanstalk.model.S3Location;
 import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
+import com.amazonaws.services.route53.AmazonRoute53Client;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import org.apache.commons.lang.Validate;
@@ -117,6 +118,10 @@ public class DeployerCommand implements Constants {
             setEnvironmentCNAMEPrefix(getDeployerConfig().getEnvironmentCNAMEPrefix());
             setEnvironmentTemplateName(getDeployerConfig().getEnvironmentTemplateName());
             setEnvironmentConfigurationOptionSettings(getDeployerConfig().getEnvironmentConfigurationOptionSettings());
+            setRoute53HostedZoneId(getDeployerConfig().getRoute53HostedZoneId());
+            setRoute53DomainName(getDeployerConfig().getRoute53DomainName());
+            setRoute53RecordTTL(getDeployerConfig().getRoute53RecordTTL());
+            setRoute53RecordType(getDeployerConfig().getRoute53RecordType());
 
             Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
             Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");
@@ -146,6 +151,7 @@ public class DeployerCommand implements Constants {
 
             setS3(factory.getService(AmazonS3Client.class));
             setAwseb(factory.getService(AWSElasticBeanstalkClient.class));
+            setRoute53(factory.getService(AmazonRoute53Client.class));
 
             return false;
         }
@@ -375,4 +381,5 @@ public class DeployerCommand implements Constants {
             return false;
         }
     }
+
 }

@@ -118,4 +118,26 @@
         <f:validateButton method="validateUpload" title="Explain Upload"
                           with="applicationName,bucketName,keyPrefix,versionLabelFormat"/>
     </f:section>
+
+    <f:section title="CNAME">
+        <f:entry title="Update Record Set?" field="route53UpdateRecordSet">
+            <f:checkbox/>
+        </f:entry>
+
+        <f:entry title="Hosted Zone Id" field="route53HostedZoneId">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Domain Name" field="route53DomainName">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Record TTL" field="route53RecordTTL">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Record Type" field="route53RecordType">
+            <f:textbox/>
+        </f:entry>
+    </f:section>
 </j:jelly>

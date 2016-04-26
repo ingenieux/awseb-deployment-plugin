@@ -104,6 +104,16 @@ public class AWSEBDeploymentConfig implements Serializable {
 
   private ConfigurationOptionSetting[] environmentConfigurationOptionSettings;
 
+  private boolean route53UpdateRecordSet;
+
+  private String route53HostedZoneId;
+
+  private String route53DomainName;
+
+  private Long route53RecordTTL;
+
+  private String route53RecordType;
+
   /**
    * Copy Factory
    *
@@ -139,7 +149,12 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getEnvironmentCNAMEPrefix()),
         r.r(this.getEnvironmentTemplateName()),
         this.environmentSettings,
-        settings
+        settings,
+        this.isRoute53UpdateRecordSet(),
+        r.r(this.getRoute53HostedZoneId()),
+        r.r(this.getRoute53DomainName()),
+        this.route53RecordTTL,
+        r.r(this.getRoute53RecordType())
     );
   }
 }

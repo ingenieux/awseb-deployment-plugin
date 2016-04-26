@@ -107,6 +107,10 @@ public class DeployerChain {
 
         commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both));
 
+        if (c.deployerConfig.isRoute53UpdateRecordSet()) {
+            commandList.add(new UpdateCNAME());
+        }
+
         commandList.add(new DeployerCommand.MarkAsSuccessful());
     }
 }
