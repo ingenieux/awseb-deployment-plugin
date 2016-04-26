@@ -18,6 +18,7 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
+import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
 import hudson.FilePath;
@@ -107,4 +108,19 @@ public class DeployerContext implements Constants, Serializable {
      * SuccessfulP
      */
     boolean successfulP;
+
+    /**
+     * Environment CNAME Prefix
+     */
+    String environmentCNAMEPrefix;
+
+    /**
+     * Environment Template Name
+     */
+    String environmentTemplateName;
+
+    /**
+     * Environment Config Option Settings
+     */
+    ConfigurationOptionSetting[] environmentConfigurationOptionSettings;;
 }

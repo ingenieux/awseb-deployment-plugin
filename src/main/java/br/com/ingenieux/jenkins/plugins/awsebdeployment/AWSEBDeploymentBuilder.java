@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -137,11 +138,37 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Getter
     private boolean zeroDowntime;
 
+    /**
+     * Create Environment If Not Exist
+     */
+    @Getter
+    private boolean createEnvironmentIfNotExist;
+
+    /**
+     * Environment CNAME Prefix
+     */
+    @Getter
+    private String environmentCNAMEPrefix;
+
+    /**
+     * Environment Template Name
+     */
+    @Getter
+    private String environmentTemplateName;
+
+    /**
+     * Environment Settings
+     */
+    private List<AWSEBRawConfigurationOptionSetting> environmentSettings;
+
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime) {
+                                  String excludes, boolean zeroDowntime, boolean createEnvironmentIfNotExist,
+                                  String environmentCNAMEPrefix,
+                                  String environmentTemplateName,
+                                  List<AWSEBRawConfigurationOptionSetting> environmentSettings) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
@@ -153,6 +180,10 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.includes = includes;
         this.excludes = excludes;
         this.zeroDowntime = zeroDowntime;
+        this.createEnvironmentIfNotExist = createEnvironmentIfNotExist;
+        this.environmentCNAMEPrefix = environmentCNAMEPrefix;
+        this.environmentTemplateName = environmentTemplateName;
+        this.environmentSettings = environmentSettings;
     }
 
     @Override
@@ -193,15 +224,34 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 includes,
                 excludes,
                 zeroDowntime,
+                null,
+                createEnvironmentIfNotExist,
+                environmentCNAMEPrefix,
+                environmentTemplateName,
+                environmentSettings,
                 null);
+    }
+
+    public List<AWSEBRawConfigurationOptionSetting> getEnvironmentSettings() {
+        if (environmentSettings == null) {
+            return new ArrayList<AWSEBRawConfigurationOptionSetting>();
+        }
+        return environmentSettings;
     }
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
+        private List<AWSEBRawConfigurationOptionSetting> environmentSettings;
+
+
         public DescriptorImpl() {
 
             load();
+        }
+
+        public List<AWSEBRawConfigurationOptionSetting> getEnvironmentSettings() {
+            return environmentSettings;
         }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {

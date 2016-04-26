@@ -89,6 +89,10 @@ public class DeployerChain {
                 new DeployerCommand.CreateApplicationVersion()
         );
 
+        if (c.deployerConfig.isCreateEnvironmentIfNotExist()) {
+            commandList.add(new DeployerCommand.CreateEnvironmentIfNotExist());
+        }
+
         if (c.deployerConfig.isZeroDowntime()) {
             commandList.add(new ZeroDowntime());
         } else {

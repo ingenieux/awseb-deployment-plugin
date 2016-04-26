@@ -43,6 +43,39 @@
         </f:entry>
 
         <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialId,awsRegion,applicationName,environmentName"/>
+
+        <f:entry title="Create enviroment if not exist?" field="createEnvironmentIfNotExist">
+            <f:checkbox/>
+        </f:entry>
+
+        <f:entry title="Environment CNAME Prefix" field="environmentCNAMEPrefix">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="Environment Template Name" field="environmentTemplateName">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry title="${%Environment Configuration Option Settings:}" field="environmentSettings">
+            <f:repeatable field="environmentSettings" minimum="0" add="Add Setting" >
+                <table width="100%">
+                    <f:entry title="Namespace" field="namespace">
+                        <f:textbox/>
+                    </f:entry>
+                    <f:entry title="Option Name" field="optionName">
+                        <f:textbox/>
+                    </f:entry>
+                    <f:entry title="Value" field="value">
+                        <f:textbox/>
+                    </f:entry>
+                    <f:entry title="">
+                        <div align="right">
+                            <f:repeatableDeleteButton value="Delete Configuration Option Setting"/>
+                        </div>
+                    </f:entry>
+                </table>
+            </f:repeatable>
+        </f:entry>
     </f:section>
 
     <f:section title="Packaging">
@@ -81,7 +114,6 @@
         <f:entry title="Zero downtime?" field="zeroDowntime">
             <f:checkbox/>
         </f:entry>
-
 
         <f:validateButton method="validateUpload" title="Explain Upload"
                           with="applicationName,bucketName,keyPrefix,versionLabelFormat"/>
