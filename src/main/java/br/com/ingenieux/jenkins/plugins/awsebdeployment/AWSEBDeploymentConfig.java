@@ -102,8 +102,6 @@ public class AWSEBDeploymentConfig implements Serializable {
 
   private List<AWSEBRawConfigurationOptionSetting> environmentSettings;
 
-  private ConfigurationOptionSetting[] environmentConfigurationOptionSettings;
-
   private boolean route53UpdateRecordSet;
 
   private String route53HostedZoneId;
@@ -121,16 +119,12 @@ public class AWSEBDeploymentConfig implements Serializable {
    * @return replaced copy
    */
   public AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) throws MacroEvaluationException, IOException, InterruptedException {
-    List<ConfigurationOptionSetting> list = new ArrayList<ConfigurationOptionSetting>();
-    for(AWSEBRawConfigurationOptionSetting rawSetting :this.getEnvironmentSettings()){
-        ConfigurationOptionSetting configurationOptionSetting = new ConfigurationOptionSetting(
-            r.r(rawSetting.getNamespace()),
-            r.r(rawSetting.getOptionName()),
-            r.r(rawSetting.getValue())
-        );
-        list.add(configurationOptionSetting);
+    List<AWSEBRawConfigurationOptionSetting> evalSettings = new ArrayList<AWSEBRawConfigurationOptionSetting>();
+
+    for(AWSEBRawConfigurationOptionSetting setting :this.getEnvironmentSettings()){
+      AWSEBRawConfigurationOptionSetting evalSetting = new AWSEBRawConfigurationOptionSetting(r.r(setting.getNamespace()), r.r(setting.getOptionName()), r.r(setting.getValue()));
+      evalSettings.add(evalSetting);
     }
-    ConfigurationOptionSetting[] settings = list.toArray(new ConfigurationOptionSetting[list.size()]);
 
     return new AWSEBDeploymentConfig(
         r.r(this.getCredentialId()),
@@ -148,8 +142,7 @@ public class AWSEBDeploymentConfig implements Serializable {
         this.isCreateEnvironmentIfNotExist(),
         r.r(this.getEnvironmentCNAMEPrefix()),
         r.r(this.getEnvironmentTemplateName()),
-        this.environmentSettings,
-        settings,
+        evalSettings,
         this.isRoute53UpdateRecordSet(),
         r.r(this.getRoute53HostedZoneId()),
         r.r(this.getRoute53DomainName()),

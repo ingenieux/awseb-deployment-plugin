@@ -17,6 +17,7 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
@@ -31,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Data
@@ -128,7 +130,7 @@ public class DeployerContext implements Constants, Serializable {
     /**
      * Environment Config Option Settings
      */
-    ConfigurationOptionSetting[] environmentConfigurationOptionSettings;
+    List<AWSEBRawConfigurationOptionSetting> environmentSettings;
 
     String route53HostedZoneId;
 

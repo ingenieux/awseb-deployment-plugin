@@ -18,6 +18,7 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.AbortEnvironmentUpdateRequest;
+import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionResult;
 import com.amazonaws.services.elasticbeanstalk.model.CreateEnvironmentRequest;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import lombok.Data;
@@ -117,7 +119,7 @@ public class DeployerCommand implements Constants {
             setEnvironmentName(getDeployerConfig().getEnvironmentName());
             setEnvironmentCNAMEPrefix(getDeployerConfig().getEnvironmentCNAMEPrefix());
             setEnvironmentTemplateName(getDeployerConfig().getEnvironmentTemplateName());
-            setEnvironmentConfigurationOptionSettings(getDeployerConfig().getEnvironmentConfigurationOptionSettings());
+            setEnvironmentSettings(getDeployerConfig().getEnvironmentSettings());
             setRoute53HostedZoneId(getDeployerConfig().getRoute53HostedZoneId());
             setRoute53DomainName(getDeployerConfig().getRoute53DomainName());
             setRoute53RecordTTL(getDeployerConfig().getRoute53RecordTTL());
@@ -195,13 +197,24 @@ public class DeployerCommand implements Constants {
             String environmentId;
 
             if (1 > deRes.getEnvironments().size()) {
+                List<ConfigurationOptionSetting> list = new ArrayList<ConfigurationOptionSetting>();
+                for(AWSEBRawConfigurationOptionSetting setting :getEnvironmentSettings()){
+                    ConfigurationOptionSetting configurationOptionSetting = new ConfigurationOptionSetting(
+                        setting.getNamespace(),
+                        setting.getOptionName(),
+                        setting.getValue()
+                    );
+                    list.add(configurationOptionSetting);
+                }
+                ConfigurationOptionSetting[] configurationOptionSettings = list.toArray(new ConfigurationOptionSetting[list.size()]);
+                
                 CreateEnvironmentRequest ceReq = new CreateEnvironmentRequest()
                         .withApplicationName(getApplicationName())
                         .withEnvironmentName(getEnvironmentName())
                         .withCNAMEPrefix(getEnvironmentCNAMEPrefix())
                         .withTemplateName(getEnvironmentTemplateName())
                         .withVersionLabel(getVersionLabel())
-                        .withOptionSettings(getEnvironmentConfigurationOptionSettings());
+                        .withOptionSettings(configurationOptionSettings);
 
                 final CreateEnvironmentResult ceRes = getAwseb().createEnvironment(ceReq);
 

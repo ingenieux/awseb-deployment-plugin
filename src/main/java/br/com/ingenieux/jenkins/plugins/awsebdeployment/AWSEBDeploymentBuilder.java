@@ -255,7 +255,6 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 environmentCNAMEPrefix,
                 environmentTemplateName,
                 environmentSettings,
-                null,
                 route53UpdateRecordSet,
                 route53HostedZoneId,
                 route53DomainName,
@@ -273,16 +272,9 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        private List<AWSEBRawConfigurationOptionSetting> environmentSettings;
-
-
         public DescriptorImpl() {
 
             load();
-        }
-
-        public List<AWSEBRawConfigurationOptionSetting> getEnvironmentSettings() {
-            return environmentSettings;
         }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
@@ -418,6 +410,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 w.printf("</ul>\n");
 
                 return FormValidation.okWithMarkup(stringWriter.toString());
+            }  catch (RuntimeException e) {
+                throw e;
             } catch (Exception exc) {
                 return FormValidation.error(exc, "Failure");
             }

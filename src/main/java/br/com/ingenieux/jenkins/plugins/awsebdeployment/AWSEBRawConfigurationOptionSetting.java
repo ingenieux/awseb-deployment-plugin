@@ -1,29 +1,21 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
+import java.io.Serializable;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import lombok.Getter;
+import lombok.Setter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class AWSEBRawConfigurationOptionSetting extends AbstractDescribableImpl<AWSEBRawConfigurationOptionSetting> {
-    private String namespace;
+public class AWSEBRawConfigurationOptionSetting extends AbstractDescribableImpl<AWSEBRawConfigurationOptionSetting> implements Serializable {
+    static final long serialVersionUID = 1L;
 
-    private String optionName;
+    @Getter @Setter private String namespace;
 
-    private String value;
+    @Getter @Setter private String optionName;
 
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public String getOptionName() {
-        return optionName;
-    }
-
-    public String getValue() {
-        return value;
-    }
+    @Getter @Setter private String value;
 
     @DataBoundConstructor
     public AWSEBRawConfigurationOptionSetting(String namespace, String optionName, String value) {
