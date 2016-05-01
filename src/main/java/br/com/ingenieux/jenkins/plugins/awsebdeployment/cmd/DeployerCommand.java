@@ -18,23 +18,29 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.AbortEnvironmentUpdateRequest;
+import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionResult;
+import com.amazonaws.services.elasticbeanstalk.model.CreateEnvironmentRequest;
+import com.amazonaws.services.elasticbeanstalk.model.CreateEnvironmentResult;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
 import com.amazonaws.services.elasticbeanstalk.model.S3Location;
 import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
+import com.amazonaws.services.route53.AmazonRoute53Client;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import org.apache.commons.lang.Validate;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import lombok.Data;
@@ -111,6 +117,13 @@ public class DeployerCommand implements Constants {
             setApplicationName(getDeployerConfig().getApplicationName());
             setVersionLabel(getDeployerConfig().getVersionLabelFormat());
             setEnvironmentName(getDeployerConfig().getEnvironmentName());
+            setEnvironmentCNAMEPrefix(getDeployerConfig().getEnvironmentCNAMEPrefix());
+            setEnvironmentTemplateName(getDeployerConfig().getEnvironmentTemplateName());
+            setEnvironmentSettings(getDeployerConfig().getEnvironmentSettings());
+            setRoute53HostedZoneId(getDeployerConfig().getRoute53HostedZoneId());
+            setRoute53DomainName(getDeployerConfig().getRoute53DomainName());
+            setRoute53RecordTTL(getDeployerConfig().getRoute53RecordTTL());
+            setRoute53RecordType(getDeployerConfig().getRoute53RecordType());
 
             Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
             Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");
@@ -140,6 +153,7 @@ public class DeployerCommand implements Constants {
 
             setS3(factory.getService(AmazonS3Client.class));
             setAwseb(factory.getService(AWSElasticBeanstalkClient.class));
+            setRoute53(factory.getService(AmazonRoute53Client.class));
 
             return false;
         }
@@ -163,6 +177,51 @@ public class DeployerCommand implements Constants {
             final CreateApplicationVersionResult result = getAwseb().createApplicationVersion(cavRequest);
 
             log("Created version: %s", result.getApplicationVersion().getVersionLabel());
+
+            return false;
+        }
+    }
+
+    /**
+     * Creates an Environment inside Application
+     */
+    public static class CreateEnvironmentIfNotExist extends DeployerCommand {
+        @Override
+        public boolean perform() throws Exception {
+            DescribeEnvironmentsRequest deReq = new DescribeEnvironmentsRequest().
+                    withApplicationName(getApplicationName()).
+                    withEnvironmentNames(getEnvironmentName()).
+                    withIncludeDeleted(false);
+
+            DescribeEnvironmentsResult deRes = getAwseb().describeEnvironments(deReq);
+            String environmentId;
+
+            if (1 > deRes.getEnvironments().size()) {
+                List<ConfigurationOptionSetting> list = new ArrayList<ConfigurationOptionSetting>();
+                for(AWSEBRawConfigurationOptionSetting setting :getEnvironmentSettings()){
+                    ConfigurationOptionSetting configurationOptionSetting = new ConfigurationOptionSetting(
+                        setting.getNamespace(),
+                        setting.getOptionName(),
+                        setting.getValue()
+                    );
+                    list.add(configurationOptionSetting);
+                }
+                ConfigurationOptionSetting[] configurationOptionSettings = list.toArray(new ConfigurationOptionSetting[list.size()]);
+                
+                CreateEnvironmentRequest ceReq = new CreateEnvironmentRequest()
+                        .withApplicationName(getApplicationName())
+                        .withEnvironmentName(getEnvironmentName())
+                        .withCNAMEPrefix(getEnvironmentCNAMEPrefix())
+                        .withTemplateName(getEnvironmentTemplateName())
+                        .withVersionLabel(getVersionLabel())
+                        .withOptionSettings(configurationOptionSettings);
+
+                final CreateEnvironmentResult ceRes = getAwseb().createEnvironment(ceReq);
+
+                environmentId = ceRes.getEnvironmentId();
+
+                log("Created environment: %s", environmentId);
+            }
 
             return false;
         }
@@ -335,4 +394,5 @@ public class DeployerCommand implements Constants {
             return false;
         }
     }
+
 }

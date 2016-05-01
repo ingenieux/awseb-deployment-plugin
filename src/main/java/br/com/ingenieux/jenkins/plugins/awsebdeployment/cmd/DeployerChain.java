@@ -89,6 +89,10 @@ public class DeployerChain {
                 new DeployerCommand.CreateApplicationVersion()
         );
 
+        if (c.deployerConfig.isCreateEnvironmentIfNotExist()) {
+            commandList.add(new DeployerCommand.CreateEnvironmentIfNotExist());
+        }
+
         if (c.deployerConfig.isZeroDowntime()) {
             commandList.add(new ZeroDowntime());
         } else {
@@ -102,6 +106,10 @@ public class DeployerChain {
         }
 
         commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both));
+
+        if (c.deployerConfig.isRoute53UpdateRecordSet()) {
+            commandList.add(new UpdateCNAME());
+        }
 
         commandList.add(new DeployerCommand.MarkAsSuccessful());
     }

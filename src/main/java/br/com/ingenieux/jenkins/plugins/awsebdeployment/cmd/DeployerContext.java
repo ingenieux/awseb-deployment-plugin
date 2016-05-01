@@ -17,8 +17,11 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
+import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
+import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.s3.AmazonS3;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
@@ -29,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Data
@@ -57,6 +61,11 @@ public class DeployerContext implements Constants, Serializable {
      * Elastic Beanstalk Client
      */
     transient AWSElasticBeanstalk awseb;
+
+    /**
+     * Elastic Beanstalk Client
+     */
+    transient AmazonRoute53 route53;
 
     /**
      * Logger Object
@@ -107,4 +116,27 @@ public class DeployerContext implements Constants, Serializable {
      * SuccessfulP
      */
     boolean successfulP;
+
+    /**
+     * Environment CNAME Prefix
+     */
+    String environmentCNAMEPrefix;
+
+    /**
+     * Environment Template Name
+     */
+    String environmentTemplateName;
+
+    /**
+     * Environment Config Option Settings
+     */
+    List<AWSEBRawConfigurationOptionSetting> environmentSettings;
+
+    String route53HostedZoneId;
+
+    String route53DomainName;
+
+    Long route53RecordTTL;
+
+    String route53RecordType;
 }

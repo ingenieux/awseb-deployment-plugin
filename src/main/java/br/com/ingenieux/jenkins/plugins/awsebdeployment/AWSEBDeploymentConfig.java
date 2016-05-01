@@ -16,11 +16,14 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import lombok.*;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
@@ -91,6 +94,24 @@ public class AWSEBDeploymentConfig implements Serializable {
    */
   private AmazonWebServicesCredentials credentials;
 
+  private boolean createEnvironmentIfNotExist;
+
+  private String environmentCNAMEPrefix;
+
+  private String environmentTemplateName;
+
+  private List<AWSEBRawConfigurationOptionSetting> environmentSettings;
+
+  private boolean route53UpdateRecordSet;
+
+  private String route53HostedZoneId;
+
+  private String route53DomainName;
+
+  private Long route53RecordTTL;
+
+  private String route53RecordType;
+
   /**
    * Copy Factory
    *
@@ -98,6 +119,13 @@ public class AWSEBDeploymentConfig implements Serializable {
    * @return replaced copy
    */
   public AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) throws MacroEvaluationException, IOException, InterruptedException {
+    List<AWSEBRawConfigurationOptionSetting> evalSettings = new ArrayList<AWSEBRawConfigurationOptionSetting>();
+
+    for(AWSEBRawConfigurationOptionSetting setting :this.getEnvironmentSettings()){
+      AWSEBRawConfigurationOptionSetting evalSetting = new AWSEBRawConfigurationOptionSetting(r.r(setting.getNamespace()), r.r(setting.getOptionName()), r.r(setting.getValue()));
+      evalSettings.add(evalSetting);
+    }
+
     return new AWSEBDeploymentConfig(
         r.r(this.getCredentialId()),
         r.r(this.getAwsRegion()),
@@ -110,7 +138,16 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getIncludes()),
         r.r(this.getExcludes()),
         this.isZeroDowntime(),
-        this.credentials
+        this.credentials,
+        this.isCreateEnvironmentIfNotExist(),
+        r.r(this.getEnvironmentCNAMEPrefix()),
+        r.r(this.getEnvironmentTemplateName()),
+        evalSettings,
+        this.isRoute53UpdateRecordSet(),
+        r.r(this.getRoute53HostedZoneId()),
+        r.r(this.getRoute53DomainName()),
+        this.route53RecordTTL,
+        r.r(this.getRoute53RecordType())
     );
   }
 }
