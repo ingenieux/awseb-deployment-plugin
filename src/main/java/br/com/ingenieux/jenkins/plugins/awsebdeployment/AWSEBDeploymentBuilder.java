@@ -170,8 +170,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Getter
     private String route53HostedZoneId;
 
-    @Getter
-    private String route53DomainName;
+    private List<AWSEBRoute53DomainName> route53DomainNames;
 
     @Getter
     private Long route53RecordTTL;
@@ -188,7 +187,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                   String environmentTemplateName,
                                   List<AWSEBRawConfigurationOptionSetting> environmentSettings,
                                   boolean route53UpdateRecordSet, String route53HostedZoneId,
-                                  String route53DomainName, Long route53RecordTTL,
+                                  List<AWSEBRoute53DomainName> route53DomainNames, Long route53RecordTTL,
                                   String route53RecordType) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
@@ -207,7 +206,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.environmentSettings = environmentSettings;
         this.route53UpdateRecordSet = route53UpdateRecordSet;
         this.route53HostedZoneId = route53HostedZoneId;
-        this.route53DomainName = route53DomainName;
+        this.route53DomainNames = route53DomainNames;
         this.route53RecordTTL = route53RecordTTL;
         this.route53RecordType = route53RecordType;
     }
@@ -257,7 +256,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 environmentSettings,
                 route53UpdateRecordSet,
                 route53HostedZoneId,
-                route53DomainName,
+                route53DomainNames,
                 route53RecordTTL,
                 route53RecordType);
     }
@@ -267,6 +266,13 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             return new ArrayList<AWSEBRawConfigurationOptionSetting>();
         }
         return environmentSettings;
+    }
+
+    public List<AWSEBRoute53DomainName> getRoute53DomainNames() {
+        if (route53DomainNames == null) {
+            return new ArrayList<AWSEBRoute53DomainName>();
+        }
+        return route53DomainNames;
     }
 
     @Extension

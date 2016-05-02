@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRoute53DomainName;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import lombok.Data;
@@ -121,7 +122,7 @@ public class DeployerCommand implements Constants {
             setEnvironmentTemplateName(getDeployerConfig().getEnvironmentTemplateName());
             setEnvironmentSettings(getDeployerConfig().getEnvironmentSettings());
             setRoute53HostedZoneId(getDeployerConfig().getRoute53HostedZoneId());
-            setRoute53DomainName(getDeployerConfig().getRoute53DomainName());
+            setRoute53DomainNames(getDeployerConfig().getRoute53DomainNames());
             setRoute53RecordTTL(getDeployerConfig().getRoute53RecordTTL());
             setRoute53RecordType(getDeployerConfig().getRoute53RecordType());
 

@@ -18,6 +18,7 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRoute53DomainName;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
@@ -134,7 +135,7 @@ public class DeployerContext implements Constants, Serializable {
 
     String route53HostedZoneId;
 
-    String route53DomainName;
+    List<AWSEBRoute53DomainName> route53DomainNames;
 
     Long route53RecordTTL;
 

@@ -128,8 +128,19 @@
             <f:textbox/>
         </f:entry>
 
-        <f:entry title="Domain Name" field="route53DomainName">
-            <f:textbox/>
+        <f:entry title="Domain Names" field="route53DomainNames">
+            <f:repeatable field="route53DomainNames" minimum="0" add="Add Domain Name" >
+                <table width="100%">
+                    <f:entry title="Domain Name" field="name">
+                        <f:textbox/>
+                    </f:entry>
+                    <f:entry title="">
+                        <div align="right">
+                            <f:repeatableDeleteButton value="Delete Domain Name"/>
+                        </div>
+                    </f:entry>
+                </table>
+            </f:repeatable>
         </f:entry>
 
         <f:entry title="Record TTL" field="route53RecordTTL">

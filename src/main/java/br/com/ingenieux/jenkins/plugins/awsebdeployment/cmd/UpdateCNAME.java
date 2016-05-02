@@ -1,5 +1,6 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRoute53DomainName;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
 import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
 import com.amazonaws.services.route53.model.Change;
@@ -32,6 +33,10 @@ public class UpdateCNAME extends DeployerCommand {
             return true;
         }
 
+        if (getRoute53DomainNames().isEmpty()) {
+            return false;
+        }
+
         String newRecordValue = result.getEnvironments().get(0).getCNAME();
 
         ResourceRecord resourceRecord = new ResourceRecord()
@@ -40,18 +45,23 @@ public class UpdateCNAME extends DeployerCommand {
         List<ResourceRecord> resourceRecords = new ArrayList<ResourceRecord>();
         resourceRecords.add(resourceRecord);
 
-        ResourceRecordSet resourceRecordSet = new ResourceRecordSet()
-                .withName(getRoute53DomainName())
-                .withTTL(getRoute53RecordTTL())
-                .withType(getRoute53RecordType())
-                .withResourceRecords(resourceRecords);
-
-        Change change = new Change()
-                .withAction(ChangeAction.UPSERT)
-                .withResourceRecordSet(resourceRecordSet);
-
         List<Change> changes = new ArrayList<Change>();
-        changes.add(change);
+
+        for (AWSEBRoute53DomainName domainName : getRoute53DomainNames()) {
+            ResourceRecordSet resourceRecordSet = new ResourceRecordSet()
+                    .withName(domainName.getName())
+                    .withTTL(getRoute53RecordTTL())
+                    .withType(getRoute53RecordType())
+                    .withResourceRecords(resourceRecords);
+
+            Change change = new Change()
+                    .withAction(ChangeAction.UPSERT)
+                    .withResourceRecordSet(resourceRecordSet);
+
+            changes.add(change);
+
+            log("Pointing %s to %s", newRecordValue, domainName.getName());
+        }
 
         ChangeBatch changeBatch = new ChangeBatch()
                 .withChanges(changes);
@@ -61,8 +71,6 @@ public class UpdateCNAME extends DeployerCommand {
                 .withChangeBatch(changeBatch);
 
         getRoute53().changeResourceRecordSets(crrsReq);
-
-        log("Pointed %s to %s", newRecordValue, getRoute53DomainName());
 
         return false;
     }

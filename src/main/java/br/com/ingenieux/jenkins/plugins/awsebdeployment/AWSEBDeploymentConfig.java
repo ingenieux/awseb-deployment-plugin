@@ -106,7 +106,7 @@ public class AWSEBDeploymentConfig implements Serializable {
 
   private String route53HostedZoneId;
 
-  private String route53DomainName;
+  private List<AWSEBRoute53DomainName> route53DomainNames;
 
   private Long route53RecordTTL;
 
@@ -121,9 +121,20 @@ public class AWSEBDeploymentConfig implements Serializable {
   public AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) throws MacroEvaluationException, IOException, InterruptedException {
     List<AWSEBRawConfigurationOptionSetting> evalSettings = new ArrayList<AWSEBRawConfigurationOptionSetting>();
 
-    for(AWSEBRawConfigurationOptionSetting setting :this.getEnvironmentSettings()){
-      AWSEBRawConfigurationOptionSetting evalSetting = new AWSEBRawConfigurationOptionSetting(r.r(setting.getNamespace()), r.r(setting.getOptionName()), r.r(setting.getValue()));
-      evalSettings.add(evalSetting);
+    if (this.getEnvironmentSettings() != null) {
+      for(AWSEBRawConfigurationOptionSetting setting :this.getEnvironmentSettings()){
+        AWSEBRawConfigurationOptionSetting evalSetting = new AWSEBRawConfigurationOptionSetting(r.r(setting.getNamespace()), r.r(setting.getOptionName()), r.r(setting.getValue()));
+        evalSettings.add(evalSetting);
+      }
+    }
+
+    List<AWSEBRoute53DomainName> evalDomainNames = new ArrayList<AWSEBRoute53DomainName>();
+
+    if (this.getRoute53DomainNames() != null) {
+      for (AWSEBRoute53DomainName domainName : this.getRoute53DomainNames()) {
+        AWSEBRoute53DomainName evalDomainName = new AWSEBRoute53DomainName(r.r(domainName.getName()));
+        evalDomainNames.add(evalDomainName);
+      }
     }
 
     return new AWSEBDeploymentConfig(
@@ -145,7 +156,7 @@ public class AWSEBDeploymentConfig implements Serializable {
         evalSettings,
         this.isRoute53UpdateRecordSet(),
         r.r(this.getRoute53HostedZoneId()),
-        r.r(this.getRoute53DomainName()),
+        evalDomainNames,
         this.route53RecordTTL,
         r.r(this.getRoute53RecordType())
     );
