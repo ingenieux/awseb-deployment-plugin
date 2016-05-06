@@ -16,7 +16,6 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import lombok.*;
 

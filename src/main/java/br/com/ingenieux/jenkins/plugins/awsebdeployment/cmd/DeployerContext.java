@@ -20,7 +20,6 @@ import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRawConfigurationOptionSetting;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBRoute53DomainName;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
-import com.amazonaws.services.elasticbeanstalk.model.ConfigurationOptionSetting;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.s3.AmazonS3;
