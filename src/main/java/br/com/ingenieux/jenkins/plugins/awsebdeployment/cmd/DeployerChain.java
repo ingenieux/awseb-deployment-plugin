@@ -90,10 +90,8 @@ public class DeployerChain {
         );
 
         if (c.deployerConfig.isCreateEnvironmentIfNotExist()) {
-            commandList.add(new DeployerCommand.CreateEnvironmentIfNotExist());
-        }
-
-        if (c.deployerConfig.isZeroDowntime()) {
+            commandList.add(new CreateOrUpdateEnvironment());
+        } else if (c.deployerConfig.isZeroDowntime()) {
             commandList.add(new ZeroDowntime());
         } else {
             commandList.add(new DeployerCommand.LookupEnvironmentId());
