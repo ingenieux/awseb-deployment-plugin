@@ -61,6 +61,11 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <includes>
+                    <include>**/version.properties</include>
+                    <include>**/*.jelly</include>
+                    <include>**/*.html</include>
+                </includes>
             </resource>
         </resources>
         <plugins>
