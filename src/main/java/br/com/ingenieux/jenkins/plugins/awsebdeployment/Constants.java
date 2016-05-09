@@ -23,7 +23,7 @@ public interface Constants {
 
     int SLEEP_TIME = 90;
 
-    int MAX_ENVIRONMENT_NAME_LENGTH = 23;
+    int MAX_ENVIRONMENT_NAME_LENGTH = 40;
 
     String GREEN_HEALTH = "Green";
 
