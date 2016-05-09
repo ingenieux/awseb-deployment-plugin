@@ -70,7 +70,6 @@ import static org.apache.commons.lang.StringUtils.defaultIfBlank;
  */
 @SuppressWarnings({"unchecked", "deprecation"})
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
-
     /**
      * Credentials name
      */
@@ -143,18 +142,11 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Getter
     private boolean checkHealth;
 
-    /**
-     * Check Application Version
-     */
-    @Getter
-    private boolean checkApplicationVersion;
-
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime, boolean checkHealth,
-                                  boolean checkApplicationVersion) {
+                                  String excludes, boolean zeroDowntime, boolean checkHealth) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
@@ -167,7 +159,6 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.excludes = excludes;
         this.zeroDowntime = zeroDowntime;
         this.checkHealth = checkHealth;
-        this.checkApplicationVersion = checkApplicationVersion;
     }
 
     @Override
@@ -209,7 +200,6 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 excludes,
                 zeroDowntime,
                 checkHealth,
-                checkApplicationVersion,
                 null);
     }
 

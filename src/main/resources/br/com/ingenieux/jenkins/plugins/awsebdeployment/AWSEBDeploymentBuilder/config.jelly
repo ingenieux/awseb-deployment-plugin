@@ -82,10 +82,6 @@
             <f:checkbox/>
         </f:entry>
 
-        <f:entry title="Confirm deployed application version?" field="checkApplicationVersion">
-            <f:checkbox/>
-        </f:entry>
-
         <f:entry title="Ensure Health is Green after deploy?" field="checkHealth">
             <f:checkbox default="true"/>
         </f:entry>

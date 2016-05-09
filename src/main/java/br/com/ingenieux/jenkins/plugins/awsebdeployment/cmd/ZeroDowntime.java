@@ -39,14 +39,26 @@ public class ZeroDowntime extends DeployerCommand {
     public boolean perform() throws Exception {
         environmentNames = generateEnvironmentNames();
 
+        EnvironmentDescription environmentDescription = null;
+
         try {
-            environmentId = lookupEnvironmentIds(environmentNames);
+            environmentDescription = lookupEnvironmentIds(environmentNames);
+
+            environmentId = environmentDescription.getEnvironmentId();
+
         } catch (InvalidDeploymentTypeException exc) {
             log("Zero Downtime isn't valid for Worker Environments.");
 
             return true;
         } catch (InvalidEnvironmentsSizeException exc) {
             log("Unable to find any suitable environment. Aborting.");
+
+            return true;
+        }
+
+        if (environmentDescription.getVersionLabel().equals(getVersionLabel())) {
+            log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
+                    "Skipping.");
 
             return true;
         }
@@ -144,7 +156,7 @@ public class ZeroDowntime extends DeployerCommand {
         return getAwseb().createConfigurationTemplate(request).getTemplateName();
     }
 
-    private String lookupEnvironmentIds(List<String> environmentNames) throws InvalidEnvironmentsSizeException, InvalidDeploymentTypeException {
+    private EnvironmentDescription lookupEnvironmentIds(List<String> environmentNames) throws InvalidEnvironmentsSizeException, InvalidDeploymentTypeException {
         DescribeEnvironmentsResult environments = getAwseb()
                 .describeEnvironments(new DescribeEnvironmentsRequest()
                         .withApplicationName(getApplicationName())
@@ -156,7 +168,7 @@ public class ZeroDowntime extends DeployerCommand {
                     throw new InvalidDeploymentTypeException();
                 }
 
-                return env.getEnvironmentId();
+                return env;
             }
         }
 
