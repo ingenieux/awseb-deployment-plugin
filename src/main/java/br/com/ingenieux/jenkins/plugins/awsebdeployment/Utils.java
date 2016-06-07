@@ -19,6 +19,7 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import hudson.model.AbstractBuild;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
@@ -27,8 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 
 public class Utils implements Constants {
 
@@ -61,10 +62,10 @@ public class Utils implements Constants {
 
     public static class Replacer {
 
-        AbstractBuild<?, ?> build;
-        BuildListener listener;
+        Run<?, ?> build;
+        TaskListener listener;
 
-        public Replacer( AbstractBuild<?, ?> build, BuildListener listener )
+        public Replacer( Run<?, ?> build, TaskListener listener )
         {
             this.build = build;
             this.listener = listener;
@@ -73,7 +74,7 @@ public class Utils implements Constants {
         public String r( String value )
             throws MacroEvaluationException, IOException, InterruptedException
         {
-            return strip( TokenMacro.expandAll( build, listener, value ) );
+            return strip( TokenMacro.expandAll((AbstractBuild<?, ?>) build, listener, value ) );
         }
     }
 
