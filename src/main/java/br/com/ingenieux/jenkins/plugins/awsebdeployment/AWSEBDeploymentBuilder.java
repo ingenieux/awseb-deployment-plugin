@@ -51,24 +51,25 @@ import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.Item;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
-import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
 
 /**
  * AWS Elastic Beanstalk Deployment
  */
 @SuppressWarnings({"unchecked", "deprecation"})
-public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
+public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
     /**
      * Credentials name
      */
@@ -186,12 +187,12 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-                           BuildListener listener) throws IOException {
+    public void perform(Run<?, ?> build, FilePath ws, Launcher launcher,
+                           TaskListener listener) throws IOException {
         try {
-            final boolean result = new DeployerRunner(build, launcher, listener, this).perform();
+            new DeployerRunner(build, ws, launcher, listener, this).perform();
 
-            return !result;
+            return;
         } catch (Exception exc) {
             throw new IOException("Deployment Failure", exc);
         }
