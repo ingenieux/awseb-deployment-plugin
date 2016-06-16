@@ -351,6 +351,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                     describeEnvironmentsResult =
                     awsElasticBeanstalk.describeEnvironments(
                             new DescribeEnvironmentsRequest().withApplicationName(applicationName)
+                                    .withIncludeDeleted(false)
                                     .withEnvironmentNames(environmentName));
 
             if (1 == describeEnvironmentsResult.getEnvironments().size()) {
