@@ -92,6 +92,11 @@ public class AWSEBDeploymentConfig implements Serializable {
   private boolean checkHealth;
 
   /**
+   * Max Number Of Attempts
+   */
+  private Integer maxAttempts;
+
+  /**
    * Credentials
    */
   private AmazonWebServicesCredentials credentials;
@@ -116,6 +121,7 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getExcludes()),
         this.isZeroDowntime(),
         this.isCheckHealth(),
+        this.getMaxAttempts(),
         this.credentials
     );
   }

@@ -192,8 +192,9 @@ public class DeployerCommand implements Constants {
             }
 
             final EnvironmentDescription environmentDescription = result.getEnvironments().get(0);
+            final String environmentLabel = environmentDescription.getVersionLabel();
 
-            if (environmentDescription.getVersionLabel().equals(getVersionLabel())) {
+            if (null != environmentLabel && environmentLabel.equals(getVersionLabel())) {
                 log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
                         "Skipping.");
 
@@ -252,7 +253,8 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             Long lastMessageTimestamp = System.currentTimeMillis();
 
-            for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
+            Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
+            for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
                 {
                     final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
                             new DescribeEventsRequest()
@@ -270,7 +272,7 @@ public class DeployerCommand implements Constants {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME));
 
                 log("Checking health/status of environmentId %s attempt %d/%s", getEnvironmentId(), nAttempt,
-                        MAX_ATTEMPTS);
+                        maxAttempts);
 
                 List<EnvironmentDescription> environments =
                         getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()

@@ -141,11 +141,19 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @Getter
     private boolean checkHealth;
 
+    /**
+     * Max Number Of Attempts
+     */
+    @Getter
+    private Integer maxAttempts;
+
+
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime, boolean checkHealth) {
+                                  String excludes, boolean zeroDowntime, boolean checkHealth,
+                                  Integer maxAttempts) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
@@ -158,6 +166,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.excludes = excludes;
         this.zeroDowntime = zeroDowntime;
         this.checkHealth = checkHealth;
+        this.maxAttempts = maxAttempts;
     }
 
     @Override
@@ -199,6 +208,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 excludes,
                 zeroDowntime,
                 checkHealth,
+                maxAttempts,
                 null);
     }
 
