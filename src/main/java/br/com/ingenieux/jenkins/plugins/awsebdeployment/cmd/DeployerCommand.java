@@ -251,8 +251,9 @@ public class DeployerCommand implements Constants {
         @Override
         public boolean perform() throws Exception {
             Long lastMessageTimestamp = System.currentTimeMillis();
-
-            for (int nAttempt = 1; nAttempt <= MAX_ATTEMPTS; nAttempt++) {
+            
+            Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
+            for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
                 {
                     final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
                             new DescribeEventsRequest()
@@ -270,7 +271,7 @@ public class DeployerCommand implements Constants {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME));
 
                 log("Checking health/status of environmentId %s attempt %d/%s", getEnvironmentId(), nAttempt,
-                        MAX_ATTEMPTS);
+                        maxAttempts);
 
                 List<EnvironmentDescription> environments =
                         getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
