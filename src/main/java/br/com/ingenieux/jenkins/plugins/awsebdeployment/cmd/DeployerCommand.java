@@ -269,7 +269,8 @@ public class DeployerCommand implements Constants {
                     }
                 }
 
-                Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_TIME));
+                Integer sleepTime = (getDeployerConfig().getSleepTime() != null) ? getDeployerConfig().getSleepTime() : SLEEP_TIME;
+                Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
 
                 log("Checking health/status of environmentId %s attempt %d/%s", getEnvironmentId(), nAttempt,
                         maxAttempts);

@@ -87,6 +87,11 @@ public class AWSEBDeploymentConfig implements Serializable {
   private boolean zeroDowntime;
 
   /**
+   * Deployment Sleep Time
+   */
+  private Integer sleepTime;
+
+  /**
    * Check Health
    */
   private boolean checkHealth;
@@ -120,6 +125,7 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getIncludes()),
         r.r(this.getExcludes()),
         this.isZeroDowntime(),
+        this.getSleepTime(),
         this.isCheckHealth(),
         this.getMaxAttempts(),
         this.credentials

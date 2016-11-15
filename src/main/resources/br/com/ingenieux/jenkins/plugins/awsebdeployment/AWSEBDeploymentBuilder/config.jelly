@@ -87,6 +87,10 @@
             <f:checkbox/>
         </f:entry>
 
+        <f:entry title="Amount of time to sleep between deployment status checks (seconds)" field="sleepTime">
+            <f:textbox default="90"/>
+        </f:entry>
+
         <f:entry title="Ensure Health is Green after deploy?" field="checkHealth">
             <f:checkbox default="true"/>
         </f:entry>
