@@ -30,6 +30,11 @@
             <f:textbox default="us-east-1"/>
         </f:entry>
 
+        <f:entry title="Number Of Attempts" field="numAttempts">
+            <f:textbox default="30"/>
+        </f:entry>
+
+
         <f:validateButton method="validateCredentials" title="Validate Credentials" with="credentialId,awsRegion"/>
     </f:section>
 

@@ -252,8 +252,8 @@ public class DeployerCommand implements Constants {
         @Override
         public boolean perform() throws Exception {
             Long lastMessageTimestamp = System.currentTimeMillis();
-            
-            Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
+
+	    Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
             for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
                 {
                     final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
