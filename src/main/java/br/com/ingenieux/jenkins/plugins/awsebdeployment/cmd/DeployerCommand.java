@@ -192,8 +192,9 @@ public class DeployerCommand implements Constants {
             }
 
             final EnvironmentDescription environmentDescription = result.getEnvironments().get(0);
+            final String environmentLabel = environmentDescription.getVersionLabel();
 
-            if (environmentDescription.getVersionLabel().equals(getVersionLabel())) {
+            if (null != environmentLabel && environmentLabel.equals(getVersionLabel())) {
                 log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
                         "Skipping.");
 
