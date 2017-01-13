@@ -136,6 +136,13 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     private boolean zeroDowntime;
 
     /**
+     * Deploy Sleep Time
+     */
+    @Getter
+    private Integer sleepTime;
+
+
+    /**
      * Check Health
      */
     @Getter
@@ -152,8 +159,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime, boolean checkHealth,
-                                  Integer maxAttempts) {
+                                  String excludes, boolean zeroDowntime, Integer sleepTime, 
+                                  boolean checkHealth, Integer maxAttempts) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
@@ -165,6 +172,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.includes = includes;
         this.excludes = excludes;
         this.zeroDowntime = zeroDowntime;
+        this.sleepTime = sleepTime;
         this.checkHealth = checkHealth;
         this.maxAttempts = maxAttempts;
     }
@@ -207,6 +215,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 includes,
                 excludes,
                 zeroDowntime,
+                sleepTime,
                 checkHealth,
                 maxAttempts,
                 null);
