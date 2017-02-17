@@ -19,16 +19,18 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Properties;
-
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 
 public class Utils implements Constants {
 
@@ -74,6 +76,19 @@ public class Utils implements Constants {
             throws MacroEvaluationException, IOException, InterruptedException
         {
             return strip( TokenMacro.expandAll( build, listener, value ) );
+        }
+
+        public List<String> rs (List<String> value)
+                throws MacroEvaluationException, IOException, InterruptedException
+        {
+            List<String> strips = new ArrayList<>();
+            for(final ListIterator<String> i = value.listIterator(); i.hasNext();)
+            {
+                final String element = i.next();
+                String newStrip = strip( TokenMacro.expandAll( build, listener, element ) );
+                strips.add(newStrip);
+            }
+            return strips;
         }
     }
 

@@ -19,21 +19,6 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang.StringUtils.defaultIfBlank;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.ApplicationDescription;
@@ -48,7 +33,6 @@ import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxMode
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
@@ -63,6 +47,20 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import lombok.Getter;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static java.lang.String.format;
+import static org.apache.commons.lang.StringUtils.defaultIfBlank;
 
 /**
  * AWS Elastic Beanstalk Deployment
@@ -91,7 +89,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
      * Environment Name
      */
     @Getter
-    private String environmentName;
+    private List<String> environmentNames;
 
     /**
      * Bucket Name
@@ -157,14 +155,14 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
-                                  String environmentName, String bucketName, String keyPrefix,
+                                  List<String> environmentNames, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime, Integer sleepTime, 
+                                  String excludes, boolean zeroDowntime, Integer sleepTime,
                                   boolean checkHealth, Integer maxAttempts) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
-        this.environmentName = environmentName;
+        this.environmentNames = environmentNames;
         this.bucketName = bucketName;
         this.keyPrefix = keyPrefix;
         this.versionLabelFormat = versionLabelFormat;
@@ -207,7 +205,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 credentialId,
                 awsRegion,
                 applicationName,
-                environmentName,
+                environmentNames,
                 bucketName,
                 keyPrefix,
                 versionLabelFormat,
@@ -351,10 +349,10 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         public FormValidation doValidateCoordinates(@QueryParameter("credentialId") String credentialId,
                                                     @QueryParameter("awsRegion") String awsRegion,
                                                     @QueryParameter("applicationName") String applicationName,
-                                                    @QueryParameter("environmentName") String environmentName)
+                                                    @QueryParameter("environmentNames") String environmentNames)
                 throws Exception {
             for (String value : Arrays
-                    .asList(credentialId, awsRegion, applicationName, environmentName)) {
+                    .asList(credentialId, awsRegion, applicationName, environmentNames)) {
                 if (value.contains("$")) {
                     return FormValidation.warning("Validation skipped due to parameter usage ('$')");
                 }
@@ -371,7 +369,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                     awsElasticBeanstalk.describeEnvironments(
                             new DescribeEnvironmentsRequest().withApplicationName(applicationName)
                                     .withIncludeDeleted(false)
-                                    .withEnvironmentNames(environmentName));
+                                    .withEnvironmentNames(environmentNames));
 
             if (1 == describeEnvironmentsResult.getEnvironments().size()) {
                 String
@@ -388,13 +386,13 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                                @QueryParameter("keyPrefix") String keyPrefix,
                                                @QueryParameter("versionLabelFormat") String versionLabelFormat) {
             String objectKey = Utils.formatPath("%s/%s-%s.zip",
-                                                defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
-                                                defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
-                                                defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>"));
+                    defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
+                    defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
+                    defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>"));
 
             String targetPath = String.format("s3://%s/%s",
-                                              defaultIfBlank(bucketName, "[default account bucket for region]"),
-                                              objectKey);
+                    defaultIfBlank(bucketName, "[default account bucket for region]"),
+                    objectKey);
 
             final String resultingMessage = format("Your object will be uploaded to S3 as: <code>%s</code> (<i>note replacements will apply</i>)", targetPath);
 

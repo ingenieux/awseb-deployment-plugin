@@ -18,12 +18,13 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.google.common.collect.Lists;
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
-
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
@@ -77,16 +78,26 @@ public class ZeroDowntime extends DeployerCommand {
     }
 
     private List<String> generateEnvironmentNames() {
-        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName());
+        List<String> newEnvironmentNames = getEnvironmentNames();
 
-        boolean lengthyP = getEnvironmentName().length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
+        for (final ListIterator<String> iterator = newEnvironmentNames.listIterator(); iterator.hasNext(); ) {
+            final String environmentName = iterator.next();
 
-        String newEnvironmentName = getEnvironmentName();
+            boolean tooLong = environmentName.length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
 
-        if (lengthyP)
-            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
-
-        newEnvironmentNames.add(newEnvironmentName + "-2");
+            if(tooLong){
+                String shortenedEnvironmentName = environmentName.substring(0, environmentName.length() - 2);
+                iterator.set(shortenedEnvironmentName + "-2");
+            }
+        }
+//        boolean lengthyP = getEnvironmentName().length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
+//
+//        String newEnvironmentName = getEnvironmentName();
+//
+//        if (lengthyP)
+//            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
+//
+//        newEnvironmentNames.add(newEnvironmentName + "-2");
 
         return newEnvironmentNames;
     }
@@ -94,7 +105,7 @@ public class ZeroDowntime extends DeployerCommand {
     private String createEnvironment(String versionLabel, String templateName,
                                      List<String> environmentNames) throws InvalidDeploymentTypeException {
         log("Creating environment based on application %s/%s from version %s and configuration template %s",
-                getApplicationName(), getEnvironmentName(), versionLabel, templateName);
+                getApplicationName(), getEnvironmentNames(), versionLabel, templateName);
 
         String newEnvironmentName = environmentNames.get(0);
 

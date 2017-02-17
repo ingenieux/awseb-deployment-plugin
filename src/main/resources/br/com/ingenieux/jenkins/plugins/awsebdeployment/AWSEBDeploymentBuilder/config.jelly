@@ -43,11 +43,11 @@
             <f:textbox/>
         </f:entry>
 
-        <f:entry title="Environment Name" field="environmentName">
+        <f:entry title="Environment Names" field="environmentNames">
             <f:textbox/>
         </f:entry>
 
-        <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialId,awsRegion,applicationName,environmentName"/>
+        <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialId,awsRegion,applicationName,environmentNames"/>
     </f:section>
 
     <f:section title="Packaging">

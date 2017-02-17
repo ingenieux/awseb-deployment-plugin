@@ -17,12 +17,15 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 import java.io.IOException;
 import java.io.Serializable;
-
-import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -49,7 +52,7 @@ public class AWSEBDeploymentConfig implements Serializable {
   /**
    * Environment Name
    */
-  private String environmentName;
+  private List<String> environmentNames;
 
   /**
    * Bucket Name
@@ -117,7 +120,7 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getCredentialId()),
         r.r(this.getAwsRegion()),
         r.r(this.getApplicationName()),
-        r.r(this.getEnvironmentName()),
+        r.rs(this.getEnvironmentNames()),
         r.r(this.getBucketName()),
         r.r(this.getKeyPrefix()),
         r.r(this.getVersionLabelFormat()),

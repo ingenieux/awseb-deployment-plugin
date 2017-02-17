@@ -16,33 +16,21 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
-import com.amazonaws.services.elasticbeanstalk.model.AbortEnvironmentUpdateRequest;
-import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
-import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionResult;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEventsRequest;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEventsResult;
-import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
-import com.amazonaws.services.elasticbeanstalk.model.EventDescription;
-import com.amazonaws.services.elasticbeanstalk.model.S3Location;
-import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
+import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
-
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
+import lombok.Data;
+import lombok.experimental.Delegate;
 import org.apache.commons.lang.Validate;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
-import lombok.Data;
-import lombok.experimental.Delegate;
 
 @Data
 public class DeployerCommand implements Constants {
@@ -114,9 +102,9 @@ public class DeployerCommand implements Constants {
             setBucketName(getDeployerConfig().getBucketName());
             setApplicationName(getDeployerConfig().getApplicationName());
             setVersionLabel(getDeployerConfig().getVersionLabelFormat());
-            setEnvironmentName(getDeployerConfig().getEnvironmentName());
+            setEnvironmentNames(getDeployerConfig().getEnvironmentNames());
 
-            Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
+            Validate.notEmpty(getEnvironmentNames(), "Empty/blank environmentName parameter");
             Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");
 
             Validate.notEmpty(getVersionLabel(), "Empty/blank versionLabel parameter");
@@ -180,7 +168,7 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentNames(getEnvironmentName()).
+                    withEnvironmentNames(getEnvironmentNames()).
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);

@@ -18,7 +18,6 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult;
-
 import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 import hudson.FilePath;
 import hudson.util.DirScanner;
