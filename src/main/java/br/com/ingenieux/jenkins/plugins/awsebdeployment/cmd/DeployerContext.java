@@ -21,13 +21,14 @@ import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
 import hudson.FilePath;
+import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.remoting.Pipe;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import java.io.PrintStream;
 import java.io.Serializable;
-import java.util.List;
 
 @RequiredArgsConstructor
 @Data
@@ -95,9 +96,9 @@ public class DeployerContext implements Constants, Serializable {
     String s3ObjectPath;
 
     /**
-     * Environment Name (s)
+     * Environment Name
      */
-    String environmentNames;
+    String environmentName;
 
     /**
      * Environment Id

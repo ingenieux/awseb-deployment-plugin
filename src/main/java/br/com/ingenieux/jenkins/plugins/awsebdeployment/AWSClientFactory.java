@@ -29,6 +29,7 @@ import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+
 import hudson.ProxyConfiguration;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
@@ -40,6 +41,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+
+import javax.security.auth.login.CredentialNotFoundException;
+
+import hudson.security.ACL;
+import jenkins.model.Jenkins;
 
 import static org.apache.commons.lang.StringUtils.defaultString;
 import static org.apache.commons.lang.StringUtils.isNotBlank;

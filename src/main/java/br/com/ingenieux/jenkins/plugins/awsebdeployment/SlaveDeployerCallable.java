@@ -16,11 +16,13 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import java.io.Serializable;
+
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerChain;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import jenkins.security.MasterToSlaveCallable;
-
-import java.io.Serializable;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 public class SlaveDeployerCallable extends MasterToSlaveCallable<Boolean, Exception>
     implements Serializable {
