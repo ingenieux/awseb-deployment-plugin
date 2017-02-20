@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+package br.com.twistedst.jenkins.plugins.awsebdeployment;
 
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import lombok.AllArgsConstructor;
@@ -25,8 +25,6 @@ import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 import java.io.IOException;
 import java.io.Serializable;
-
-import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 @NoArgsConstructor
 @AllArgsConstructor

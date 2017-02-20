@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
+package br.com.twistedst.jenkins.plugins.awsebdeployment.cmd;
 
 import com.google.common.collect.Lists;
 

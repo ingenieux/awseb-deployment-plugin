@@ -14,15 +14,13 @@
  *    limitations under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+package br.com.twistedst.jenkins.plugins.awsebdeployment;
 
 import java.io.Serializable;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerChain;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
+import br.com.twistedst.jenkins.plugins.awsebdeployment.cmd.DeployerChain;
+import br.com.twistedst.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import jenkins.security.MasterToSlaveCallable;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 public class SlaveDeployerCallable extends MasterToSlaveCallable<Boolean, Exception>
     implements Serializable {
