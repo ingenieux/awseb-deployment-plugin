@@ -17,7 +17,11 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 import java.io.IOException;
 import java.io.Serializable;

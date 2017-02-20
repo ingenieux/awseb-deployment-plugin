@@ -31,9 +31,12 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
 import hudson.ProxyConfiguration;
+import hudson.security.ACL;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.reflect.ConstructorUtils;
 import org.apache.commons.lang.reflect.FieldUtils;
 
+import javax.security.auth.login.CredentialNotFoundException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collections;
