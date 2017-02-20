@@ -19,16 +19,15 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Properties;
-
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import java.util.*;
 
 public class Utils implements Constants {
 
@@ -64,16 +63,28 @@ public class Utils implements Constants {
         AbstractBuild<?, ?> build;
         BuildListener listener;
 
-        public Replacer( AbstractBuild<?, ?> build, BuildListener listener )
-        {
+        public Replacer(AbstractBuild<?, ?> build, BuildListener listener) {
             this.build = build;
             this.listener = listener;
         }
 
-        public String r( String value )
-            throws MacroEvaluationException, IOException, InterruptedException
-        {
-            return strip( TokenMacro.expandAll( build, listener, value ) );
+        public String r(String value)
+                throws MacroEvaluationException, IOException, InterruptedException {
+            return strip(TokenMacro.expandAll(build, listener, value));
+        }
+
+        // For performing on comma separated field values.
+        public List<String> rl(List<String> valuesListed)
+                throws MacroEvaluationException, IOException, InterruptedException {
+
+            for (ListIterator<String> i = valuesListed.listIterator(); i.hasNext(); ) {
+                String element = (String) i.next();
+                element = strip(TokenMacro.expandAll(build, listener, element));
+                i.set(element);
+            }
+
+            return valuesListed;
+
         }
     }
 

@@ -32,14 +32,8 @@ import org.apache.commons.lang.Validate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
-
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
-import lombok.Data;
-import lombok.experimental.Delegate;
 
 @Data
 public class DeployerCommand implements Constants {
@@ -111,9 +105,15 @@ public class DeployerCommand implements Constants {
             setBucketName(getDeployerConfig().getBucketName());
             setApplicationName(getDeployerConfig().getApplicationName());
             setVersionLabel(getDeployerConfig().getVersionLabelFormat());
-            setEnvironmentName(getDeployerConfig().getEnvironmentName());
+            List<String> environmentNamesList = getDeployerConfig().getEnvironmentNames();
+            for (ListIterator<String> iStr = environmentNamesList.listIterator(); iStr.hasNext();)
+            {
+                String element = (String) iStr.next();
+                setEnvironmentNames(element);
+            }
+//            setEnvironmentNames(getDeployerConfig().getEnvironmentNamesListed());
 
-            Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
+            Validate.notEmpty(getEnvironmentNames(), "Empty/blank environmentName parameter");
             Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");
 
             Validate.notEmpty(getVersionLabel(), "Empty/blank versionLabel parameter");
@@ -177,7 +177,7 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentNames(getEnvironmentName()).
+                    withEnvironmentNames(getEnvironmentNames()).
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
