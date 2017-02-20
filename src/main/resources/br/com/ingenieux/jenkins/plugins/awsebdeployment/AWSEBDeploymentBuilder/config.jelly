@@ -43,7 +43,7 @@
             <f:textbox/>
         </f:entry>
 
-        <f:entry title="Environment Names" field="environmentNames">
+        <f:entry title="Environment Name(s)" field="environmentNames">
             <f:textbox/>
         </f:entry>
 

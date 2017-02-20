@@ -19,17 +19,20 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import com.amazonaws.internal.SdkInternalList;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
 import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 import lombok.Data;
 import lombok.experimental.Delegate;
+import org.apache.commons.beanutils.converters.IntegerConverter;
 import org.apache.commons.lang.Validate;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
 
 @Data
@@ -102,7 +105,13 @@ public class DeployerCommand implements Constants {
             setBucketName(getDeployerConfig().getBucketName());
             setApplicationName(getDeployerConfig().getApplicationName());
             setVersionLabel(getDeployerConfig().getVersionLabelFormat());
-            setEnvironmentNames(getDeployerConfig().getEnvironmentNames());
+            List<String> environmentNamesList = getDeployerConfig().getEnvironmentNames();
+            for (ListIterator<String> iStr = environmentNamesList.listIterator(); iStr.hasNext();)
+            {
+                String element = (String) iStr.next();
+                setEnvironmentNames(element);
+            }
+//            setEnvironmentNames(getDeployerConfig().getEnvironmentNamesListed());
 
             Validate.notEmpty(getEnvironmentNames(), "Empty/blank environmentName parameter");
             Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");

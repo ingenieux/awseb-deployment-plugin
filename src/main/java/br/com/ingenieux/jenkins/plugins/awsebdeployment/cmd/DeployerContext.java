@@ -95,9 +95,9 @@ public class DeployerContext implements Constants, Serializable {
     String s3ObjectPath;
 
     /**
-     * Environment Name
+     * Environment Name (s)
      */
-    List<String> environmentNames;
+    String environmentNames;
 
     /**
      * Environment Id

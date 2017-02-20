@@ -78,26 +78,26 @@ public class ZeroDowntime extends DeployerCommand {
     }
 
     private List<String> generateEnvironmentNames() {
-        List<String> newEnvironmentNames = getEnvironmentNames();
+        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentNames());
 
-        for (final ListIterator<String> iterator = newEnvironmentNames.listIterator(); iterator.hasNext(); ) {
-            final String environmentName = iterator.next();
+//        for (final ListIterator<String> iterator = newEnvironmentNames.listIterator(); iterator.hasNext(); ) {
+//            final String environmentName = iterator.next();
+//
+//            boolean tooLong = environmentName.length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
+//
+//            if(tooLong){
+//                String shortenedEnvironmentName = environmentName.substring(0, environmentName.length() - 2);
+//                iterator.set(shortenedEnvironmentName + "-2");
+//            }
+//        }
+        boolean lengthyP = getEnvironmentName().length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
 
-            boolean tooLong = environmentName.length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
+        String newEnvironmentName = getEnvironmentName();
 
-            if(tooLong){
-                String shortenedEnvironmentName = environmentName.substring(0, environmentName.length() - 2);
-                iterator.set(shortenedEnvironmentName + "-2");
-            }
-        }
-//        boolean lengthyP = getEnvironmentName().length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
-//
-//        String newEnvironmentName = getEnvironmentName();
-//
-//        if (lengthyP)
-//            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
-//
-//        newEnvironmentNames.add(newEnvironmentName + "-2");
+        if (lengthyP)
+            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
+
+        newEnvironmentNames.add(newEnvironmentName + "-2");
 
         return newEnvironmentNames;
     }

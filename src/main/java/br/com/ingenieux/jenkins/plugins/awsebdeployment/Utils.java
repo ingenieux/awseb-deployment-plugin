@@ -27,10 +27,7 @@ import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Properties;
+import java.util.*;
 
 public class Utils implements Constants {
 
@@ -66,29 +63,28 @@ public class Utils implements Constants {
         AbstractBuild<?, ?> build;
         BuildListener listener;
 
-        public Replacer( AbstractBuild<?, ?> build, BuildListener listener )
-        {
+        public Replacer(AbstractBuild<?, ?> build, BuildListener listener) {
             this.build = build;
             this.listener = listener;
         }
 
-        public String r( String value )
-            throws MacroEvaluationException, IOException, InterruptedException
-        {
-            return strip( TokenMacro.expandAll( build, listener, value ) );
+        public String r(String value)
+                throws MacroEvaluationException, IOException, InterruptedException {
+            return strip(TokenMacro.expandAll(build, listener, value));
         }
 
-        public List<String> rs (List<String> value)
-                throws MacroEvaluationException, IOException, InterruptedException
-        {
-            List<String> strips = new ArrayList<>();
-            for(final ListIterator<String> i = value.listIterator(); i.hasNext();)
-            {
-                final String element = i.next();
-                String newStrip = strip( TokenMacro.expandAll( build, listener, element ) );
-                strips.add(newStrip);
+        // For performing on comma separated field values.
+        public List<String> rl(List<String> valuesListed)
+                throws MacroEvaluationException, IOException, InterruptedException {
+
+            for (ListIterator<String> i = valuesListed.listIterator(); i.hasNext(); ) {
+                String element = (String) i.next();
+                element = strip(TokenMacro.expandAll(build, listener, element));
+                i.set(element);
             }
-            return strips;
+
+            return valuesListed;
+
         }
     }
 

@@ -89,7 +89,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
      * Environment Name
      */
     @Getter
-    private List<String> environmentNames;
+    private String environmentNames;
 
     /**
      * Bucket Name
@@ -155,7 +155,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
-                                  List<String> environmentNames, String bucketName, String keyPrefix,
+                                  String environmentNames, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
                                   String excludes, boolean zeroDowntime, Integer sleepTime,
                                   boolean checkHealth, Integer maxAttempts) {
@@ -275,15 +275,22 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckEnvironmentName(@QueryParameter String value) {
+        public FormValidation doCheckEnvironmentNames(@QueryParameter String value) {
             if (value.contains("$")) {
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
             }
 
-            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
+            if (!value.matches("^(\\p{Alpha}[\\p{Alnum}\\-]{0,39})$") && !value.contains(",") || value.endsWith("-")) {
                 return FormValidation.error(
                         "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
             }
+
+            if(value.contains(",")) {
+                return FormValidation.ok(
+                        "Going to be treating as multiple comma separated EB environment names."
+                );
+            }
+
             return FormValidation.ok();
         }
 
@@ -351,6 +358,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                                     @QueryParameter("applicationName") String applicationName,
                                                     @QueryParameter("environmentNames") String environmentNames)
                 throws Exception {
+            // Parse down environmentNames here?
+
             for (String value : Arrays
                     .asList(credentialId, awsRegion, applicationName, environmentNames)) {
                 if (value.contains("$")) {

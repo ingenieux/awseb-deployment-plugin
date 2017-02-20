@@ -28,7 +28,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
-    <name>AWS Elastic Beanstalk Deployment Plugin</name>
+    <name>AWS Elastic Beanstalk Deployment Plugin Test Multiple Environments</name>
     <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
 
     <properties>
