@@ -25,9 +25,7 @@ import static org.apache.commons.lang.StringUtils.defaultIfBlank;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
@@ -282,15 +280,12 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
             }
 
-            if(value.contains(","))
-            {
+            if (value.contains(",")) {
                 if (!value.matches("^[\\p{Alpha}[\\p{Alnum}\\-]{0,39}]+(,\\p{Space}*[\\p{Alpha}[\\p{Alnum}\\-]{0,39}]+)*$") || value.endsWith("-")) {
                     return FormValidation.error(
                             "Doesn't look like properly comma separated environment names. Each must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
                 }
-            }
-            else
-            {
+            } else {
                 if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
                     return FormValidation.error(
                             "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
@@ -371,6 +366,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 }
             }
 
+            List<String> environmentNames = Lists.<String>newArrayList(environmentName.split(","));
+
 
             AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
 
@@ -383,8 +380,19 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                     awsElasticBeanstalk.describeEnvironments(
                             new DescribeEnvironmentsRequest().withApplicationName(applicationName)
                                     .withIncludeDeleted(false)
-                                    .withEnvironmentNames(Lists.<String>newArrayList(environmentName.split(","))));
+                                    .withEnvironmentNames(environmentNames));
 
+            // Check for one environment
+            if (describeEnvironmentsResult.getEnvironments().size() > 1) {
+                List<String> environmentIds = new ArrayList<>();
+                Integer size = describeEnvironmentsResult.getEnvironments().size();
+                for (Integer i = 0; i < size; i++) {
+                    environmentIds.add(describeEnvironmentsResult.getEnvironments().get(i).getEnvironmentId());
+                }
+                // Do something with the Ids?
+
+                return FormValidation.ok("Multiple environments found.");
+            }
             if (1 == describeEnvironmentsResult.getEnvironments().size()) {
                 String
                         environmentId =
