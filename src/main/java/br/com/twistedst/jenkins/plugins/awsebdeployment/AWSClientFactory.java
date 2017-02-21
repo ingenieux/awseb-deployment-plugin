@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+package br.com.twistedst.jenkins.plugins.awsebdeployment;
 
 import com.amazonaws.AmazonWebServiceClient;
 import com.amazonaws.ClientConfiguration;
@@ -41,11 +41,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-
-import javax.security.auth.login.CredentialNotFoundException;
-
-import hudson.security.ACL;
-import jenkins.model.Jenkins;
 
 import static org.apache.commons.lang.StringUtils.defaultString;
 import static org.apache.commons.lang.StringUtils.isNotBlank;

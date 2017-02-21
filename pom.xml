@@ -23,13 +23,13 @@
         <!-- which version of Jenkins is this plugin built against? -->
     </parent>
 
-    <groupId>br.com.ingenieux.jenkins.plugins</groupId>
+    <groupId>br.com.twistedst.jenkins.plugins</groupId>
     <artifactId>awseb-deployment-plugin-testMultipleEnv</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <name>AWS Elastic Beanstalk Deployment Plugin Test Multiple Environments</name>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin+MultipleEnv</url>
 
     <properties>
         <jenkins.version>1.642.1</jenkins.version>
@@ -51,8 +51,8 @@
 
     <developers>
         <developer>
-            <id>aldrinleal</id>
-            <name>Aldrin Leal</name>
+            <id>Twistedst</id>
+            <name>Steven Hawley</name>
         </developer>
     </developers>
 
@@ -105,8 +105,8 @@
 
     <scm>
         <connection>scm:git:ssh://github.com/Twistedst/awseb-deployment-plugin.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/twistedSt/awseb-deployment-plugin.git</developerConnection>
-        <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
+        <developerConnection>scm:git:ssh://git@github.com/TwistedSt/awseb-deployment-plugin.git</developerConnection>
+        <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin+MultipleEnv</url>
         <tag>awseb-deployment-plugin-testMultipleEnv-0.0.1</tag>
     </scm>
 

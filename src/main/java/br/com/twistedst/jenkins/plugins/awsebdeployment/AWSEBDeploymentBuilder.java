@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+package br.com.twistedst.jenkins.plugins.awsebdeployment;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.defaultIfBlank;
@@ -63,7 +63,7 @@ import hudson.util.FormValidation;
 import lombok.Getter;
 
 /**
- * AWS Elastic Beanstalk Deployment
+ * AWS Elastic Beanstalk Deployment Multiple Environments
  */
 @SuppressWarnings({"unchecked", "deprecation"})
 public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
@@ -232,7 +232,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         }
 
         public String getDisplayName() {
-            return "AWS Elastic Beanstalk";
+            return "AWS Elastic Beanstalk Multiple Environments";
         }
 
         public AbstractIdCredentialsListBoxModel<?, ?> doFillCredentialIdItems(
