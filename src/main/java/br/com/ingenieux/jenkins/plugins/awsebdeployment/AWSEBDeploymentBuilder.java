@@ -159,7 +159,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
                                   String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime, Integer sleepTime, 
+                                  String excludes, boolean zeroDowntime, Integer sleepTime,
                                   boolean checkHealth, Integer maxAttempts) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
@@ -282,10 +282,21 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
             }
 
-            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
-                return FormValidation.error(
-                        "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+            if(value.contains(","))
+            {
+                if (!value.matches("^[\\p{Alpha}[\\p{Alnum}\\-]{0,39}]+(,\\p{Space}*[\\p{Alpha}[\\p{Alnum}\\-]{0,39}]+)*$") || value.endsWith("-")) {
+                    return FormValidation.error(
+                            "Doesn't look like properly comma separated environment names. Each must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+                }
             }
+            else
+            {
+                if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
+                    return FormValidation.error(
+                            "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+                }
+            }
+
             return FormValidation.ok();
         }
 
@@ -360,6 +371,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 }
             }
 
+
             AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
 
             AWSElasticBeanstalk
@@ -371,7 +383,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                     awsElasticBeanstalk.describeEnvironments(
                             new DescribeEnvironmentsRequest().withApplicationName(applicationName)
                                     .withIncludeDeleted(false)
-                                    .withEnvironmentNames(environmentName));
+                                    .withEnvironmentNames(Lists.<String>newArrayList(environmentName.split(","))));
 
             if (1 == describeEnvironmentsResult.getEnvironments().size()) {
                 String
@@ -388,13 +400,13 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                                @QueryParameter("keyPrefix") String keyPrefix,
                                                @QueryParameter("versionLabelFormat") String versionLabelFormat) {
             String objectKey = Utils.formatPath("%s/%s-%s.zip",
-                                                defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
-                                                defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
-                                                defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>"));
+                    defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
+                    defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
+                    defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>"));
 
             String targetPath = String.format("s3://%s/%s",
-                                              defaultIfBlank(bucketName, "[default account bucket for region]"),
-                                              objectKey);
+                    defaultIfBlank(bucketName, "[default account bucket for region]"),
+                    objectKey);
 
             final String resultingMessage = format("Your object will be uploaded to S3 as: <code>%s</code> (<i>note replacements will apply</i>)", targetPath);
 
