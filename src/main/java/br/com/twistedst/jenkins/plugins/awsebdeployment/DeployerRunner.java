@@ -14,9 +14,9 @@
  *    limitations under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment;
+package br.com.twistedst.jenkins.plugins.awsebdeployment;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
+import br.com.twistedst.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;

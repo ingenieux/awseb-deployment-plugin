@@ -14,11 +14,11 @@
  *    limitations under the License.
  */
 
-package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
+package br.com.twistedst.jenkins.plugins.awsebdeployment.cmd;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
+import br.com.twistedst.jenkins.plugins.awsebdeployment.Constants;
+import br.com.twistedst.jenkins.plugins.awsebdeployment.Utils;
+import br.com.twistedst.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
