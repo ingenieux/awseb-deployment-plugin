@@ -14,9 +14,9 @@
  *    limitations under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment.cmd;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-import br.com.twistedst.jenkins.plugins.awsebdeployment.Utils;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult;
 
 import edu.umd.cs.findbugs.annotations.SuppressWarnings;

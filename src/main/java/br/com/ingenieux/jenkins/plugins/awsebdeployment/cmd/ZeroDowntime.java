@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment.cmd;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.google.common.collect.Lists;

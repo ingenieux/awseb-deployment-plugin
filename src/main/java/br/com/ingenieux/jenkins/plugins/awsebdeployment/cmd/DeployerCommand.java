@@ -14,11 +14,11 @@
  *    limitations under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment.cmd;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-import br.com.twistedst.jenkins.plugins.awsebdeployment.AWSClientFactory;
-import br.com.twistedst.jenkins.plugins.awsebdeployment.Constants;
-import br.com.twistedst.jenkins.plugins.awsebdeployment.Utils;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -28,7 +28,6 @@ import lombok.Data;
 import lombok.experimental.Delegate;
 import org.apache.commons.lang.Validate;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
@@ -188,7 +187,7 @@ public class DeployerCommand implements Constants {
                 if (null != environmentLabel && environmentLabel.equals(getVersionLabel())) {
                     log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
                             "Skipping.");
-                    csEnvironmentIds.append("");
+                    csEnvironmentIds.append(element.getEnvironmentId());
                     if (i.hasNext()) {
                         csEnvironmentIds.append(",");
                     }
@@ -255,15 +254,9 @@ public class DeployerCommand implements Constants {
         @Override
         public boolean perform() throws Exception {
 
+            List<String> environmentIds = Lists.newArrayList(getEnvironmentId().split(","));
 
-            List<EnvironmentDescription> environments =
-                    getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
-                            .withEnvironmentIds(
-                                    Lists.<String>newArrayList(getEnvironmentId().split(",")))
-                            .withIncludeDeleted(false)
-                    ).getEnvironments();
-
-            if (environments.size() < 1) {
+            if (environmentIds.size() < 1) {
                 log("Environment not found. Aborting");
 
                 return true;
@@ -271,20 +264,28 @@ public class DeployerCommand implements Constants {
 
             boolean moveOn = false;
 
-            for (Integer i = 0; i < environments.size(); i++) {
-                Long lastMessageTimestamp = System.currentTimeMillis();
+            for (Integer i = 0; i < environmentIds.size(); i++) {
 
                 Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
 
-                String currentEnvironmentId = environments.get(i).getEnvironmentId();
-
                 moveOn = false;
 
-                EnvironmentDescription environmentDescription = environments.get(i);
 
                 for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
-                    if(moveOn)
-                        continue;
+
+                    List<EnvironmentDescription> environments = getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
+                            .withEnvironmentIds(Lists.<String>newArrayList(getEnvironmentId().split(",")))
+                            .withIncludeDeleted(false)
+                    ).getEnvironments();
+
+                    String currentEnvironmentId = environments.get(i).getEnvironmentId();
+
+                    EnvironmentDescription environmentDescription = environments.get(i);
+
+                    Long lastMessageTimestamp = System.currentTimeMillis();
+
+                    if (moveOn)
+                        break;
                     {
                         final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
                                 new DescribeEventsRequest()

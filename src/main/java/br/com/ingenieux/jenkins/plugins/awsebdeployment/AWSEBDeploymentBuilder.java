@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.defaultIfBlank;
@@ -384,11 +384,11 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
 
             // Check for one environment
             if (describeEnvironmentsResult.getEnvironments().size() > 1) {
-                List<String> environmentIds = new ArrayList<>();
-                Integer size = describeEnvironmentsResult.getEnvironments().size();
-                for (Integer i = 0; i < size; i++) {
-                    environmentIds.add(describeEnvironmentsResult.getEnvironments().get(i).getEnvironmentId());
-                }
+//                List<String> environmentIds = new ArrayList<>();
+//                Integer size = describeEnvironmentsResult.getEnvironments().size();
+//                for (Integer i = 0; i < size; i++) {
+//                    environmentIds.add(describeEnvironmentsResult.getEnvironments().get(i).getEnvironmentId());
+//                }
                 // Do something with the Ids?
 
                 return FormValidation.ok("Multiple environments found.");
