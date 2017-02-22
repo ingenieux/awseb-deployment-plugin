@@ -21,11 +21,13 @@ import com.google.common.collect.Lists;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
 
 import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.apache.commons.lang.StringUtils.split;
 
 @SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
 public class ZeroDowntime extends DeployerCommand {
@@ -41,52 +43,59 @@ public class ZeroDowntime extends DeployerCommand {
 
         EnvironmentDescription environmentDescription = null;
 
-        try {
-            environmentDescription = lookupEnvironmentIds(environmentNames);
+        for(ListIterator<String> i = environmentNames.listIterator(); i.hasNext();) {
+            try {
+                List<String> envName = Lists.newArrayList(i.next());
 
-            environmentId = environmentDescription.getEnvironmentId();
+                environmentDescription = lookupEnvironmentIds(envName);
 
-        } catch (InvalidDeploymentTypeException exc) {
-            log("Zero Downtime isn't valid for Worker Environments.");
+                environmentId = environmentDescription.getEnvironmentId();
 
-            return true;
-        } catch (InvalidEnvironmentsSizeException exc) {
-            log("Unable to find any suitable environment. Aborting.");
+            } catch (InvalidDeploymentTypeException exc) {
+                log("Zero Downtime isn't valid for Worker Environments.");
 
-            return true;
+                return true;
+            } catch (InvalidEnvironmentsSizeException exc) {
+                log("Unable to find any suitable environment. Aborting.");
+
+                return true;
+            }
+
+            if (environmentDescription.getVersionLabel().equals(getVersionLabel())) {
+                log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
+                        "Skipping.");
+
+                return true;
+            }
+
+            templateName = createConfigurationTemplate(environmentId);
+
+            String
+                    clonedEnvironmentId =
+                    createEnvironment(getVersionLabel(), templateName, environmentNames);
+
+            setEnvironmentId(clonedEnvironmentId);
+
+            log("From now on, we'll use '%s' as the environmentId, but once finished, we'll swap and replace with '%s'", getEnvironmentId(), environmentId);
+
         }
-
-        if (environmentDescription.getVersionLabel().equals(getVersionLabel())) {
-            log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
-                    "Skipping.");
-
-            return true;
-        }
-
-        templateName = createConfigurationTemplate(environmentId);
-
-        String
-                clonedEnvironmentId =
-                createEnvironment(getVersionLabel(), templateName, environmentNames);
-
-        setEnvironmentId(clonedEnvironmentId);
-
-        log("From now on, we'll use '%s' as the environmentId, but once finished, we'll swap and replace with '%s'", getEnvironmentId(), environmentId);
-
         return false;
     }
 
     private List<String> generateEnvironmentNames() {
-        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName());
 
-        boolean lengthyP = getEnvironmentName().length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
+        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName().split(","));
 
-        String newEnvironmentName = getEnvironmentName();
+        for (final ListIterator<String> iterator = newEnvironmentNames.listIterator(); iterator.hasNext(); ) {
+            final String environmentName = iterator.next();
 
-        if (lengthyP)
-            newEnvironmentName = getEnvironmentName().substring(0, getEnvironmentName().length() - 2);
+            boolean tooLong = environmentName.length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
 
-        newEnvironmentNames.add(newEnvironmentName + "-2");
+            if(tooLong){
+                String shortenedEnvironmentName = environmentName.substring(0, environmentName.length() - 2);
+                iterator.set(shortenedEnvironmentName + "-2");
+            }
+        }
 
         return newEnvironmentNames;
     }

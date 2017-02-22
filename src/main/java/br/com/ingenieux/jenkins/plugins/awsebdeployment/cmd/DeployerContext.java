@@ -21,9 +21,7 @@ import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
 import hudson.FilePath;
-import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.remoting.Pipe;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
