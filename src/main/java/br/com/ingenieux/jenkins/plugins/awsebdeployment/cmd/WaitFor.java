@@ -14,22 +14,10 @@
  *    limitations under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-public interface Constants {
-    String DEFAULT_REGION = "us-east-1";
-
-    int MAX_ATTEMPTS = 30;
-
-    int SLEEP_TIME = 90;
-
-    int MAX_ENVIRONMENT_NAME_LENGTH = 40;
-
-    String GREEN_HEALTH = "Green";
-
-    String STATUS_READY = "Ready";
-
-    String DEFAULT_VERSION = "UNKNOWN";
-
-    String WORKER_ENVIRONMENT_TYPE = "Worker";
+public enum WaitFor {
+    Status,
+    Health,
+    Both
 }

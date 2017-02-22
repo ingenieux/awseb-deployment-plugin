@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.defaultIfBlank;

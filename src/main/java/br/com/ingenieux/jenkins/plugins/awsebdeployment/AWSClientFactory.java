@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import com.amazonaws.AmazonWebServiceClient;
 import com.amazonaws.ClientConfiguration;

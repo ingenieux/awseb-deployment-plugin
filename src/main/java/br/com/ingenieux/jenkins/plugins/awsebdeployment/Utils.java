@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package br.com.twistedst.jenkins.plugins.awsebdeployment;
+package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
