@@ -86,6 +86,11 @@ public class DeployerContext implements Constants, Serializable {
     String versionLabel;
 
     /**
+     * Version Description
+     */
+    String versionDescription;
+
+    /**
      * Object Key
      */
     String objectKey;

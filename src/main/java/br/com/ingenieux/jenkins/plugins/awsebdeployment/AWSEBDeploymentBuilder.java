@@ -112,6 +112,12 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     private String versionLabelFormat;
 
     /**
+     * Version Description
+     */
+    @Getter
+    private String versionDescriptionFormat;
+
+    /**
      * Root Object
      */
     @Getter
@@ -158,9 +164,10 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
     @DataBoundConstructor
     public AWSEBDeploymentBuilder(String credentialId, String awsRegion, String applicationName,
                                   String environmentName, String bucketName, String keyPrefix,
-                                  String versionLabelFormat, String rootObject, String includes,
-                                  String excludes, boolean zeroDowntime, Integer sleepTime, 
-                                  boolean checkHealth, Integer maxAttempts) {
+                                  String versionLabelFormat, String versionDescriptionFormat,
+                                  String rootObject, String includes, String excludes,
+                                  boolean zeroDowntime, Integer sleepTime, boolean checkHealth,
+                                  Integer maxAttempts) {
         this.credentialId = credentialId;
         this.awsRegion = awsRegion;
         this.applicationName = applicationName;
@@ -168,6 +175,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
         this.bucketName = bucketName;
         this.keyPrefix = keyPrefix;
         this.versionLabelFormat = versionLabelFormat;
+        this.versionDescriptionFormat = versionDescriptionFormat;
         this.rootObject = rootObject;
         this.includes = includes;
         this.excludes = excludes;
@@ -211,6 +219,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 bucketName,
                 keyPrefix,
                 versionLabelFormat,
+                versionDescriptionFormat,
                 rootObject,
                 includes,
                 excludes,

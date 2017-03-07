@@ -114,6 +114,7 @@ public class DeployerCommand implements Constants {
             setBucketName(getDeployerConfig().getBucketName());
             setApplicationName(getDeployerConfig().getApplicationName());
             setVersionLabel(getDeployerConfig().getVersionLabelFormat());
+            setVersionDescription(getDeployerConfig().getVersionDescriptionFormat());
             setEnvironmentName(getDeployerConfig().getEnvironmentName());
 
             Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
@@ -162,7 +163,8 @@ public class DeployerCommand implements Constants {
                     .withApplicationName(getApplicationName())
                     .withAutoCreateApplication(true)
                     .withSourceBundle(new S3Location(getBucketName(), getObjectKey()))
-                    .withVersionLabel(getVersionLabel());
+                    .withVersionLabel(getVersionLabel())
+                    .withDescription(getVersionDescription());
 
             final CreateApplicationVersionResult result = getAwseb().createApplicationVersion(cavRequest);
 
@@ -219,7 +221,8 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             UpdateEnvironmentRequest req = new UpdateEnvironmentRequest().
                     withEnvironmentId(getEnvironmentId()).
-                    withVersionLabel(getVersionLabel());
+                    withVersionLabel(getVersionLabel()).
+                    withDescription(getVersionDescription());
 
             log("Updating environmentId '%s' with Version Label set to '%s'", getEnvironmentId(), getVersionLabel());
 
