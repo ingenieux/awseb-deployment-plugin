@@ -67,7 +67,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         String
                 clonedEnvironmentId =
-                createEnvironment(getVersionLabel(), templateName, environmentNames);
+                createEnvironment(getVersionLabel(), getVersionDescription(), templateName, environmentNames);
 
         setEnvironmentId(clonedEnvironmentId);
 
@@ -91,7 +91,7 @@ public class ZeroDowntime extends DeployerCommand {
         return newEnvironmentNames;
     }
 
-    private String createEnvironment(String versionLabel, String templateName,
+    private String createEnvironment(String versionLabel, String versionDescription, String templateName,
                                      List<String> environmentNames) throws InvalidDeploymentTypeException {
         log("Creating environment based on application %s/%s from version %s and configuration template %s",
                 getApplicationName(), getEnvironmentName(), versionLabel, templateName);
@@ -110,7 +110,8 @@ public class ZeroDowntime extends DeployerCommand {
 
         CreateEnvironmentRequest request = new CreateEnvironmentRequest()
                 .withEnvironmentName(newEnvironmentName).withVersionLabel(versionLabel)
-                .withApplicationName(getApplicationName()).withTemplateName(templateName);
+                .withDescription(versionDescription).withApplicationName(getApplicationName())
+                .withTemplateName(templateName);
 
         return getAwseb().createEnvironment(request).getEnvironmentId();
     }

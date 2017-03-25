@@ -67,6 +67,11 @@ public class AWSEBDeploymentConfig implements Serializable {
   private String versionLabelFormat;
 
   /**
+   * Version Description Format
+   */
+  private String versionDescriptionFormat;
+
+  /**
    * Root Object
    */
   private String rootObject;
@@ -121,6 +126,7 @@ public class AWSEBDeploymentConfig implements Serializable {
         r.r(this.getBucketName()),
         r.r(this.getKeyPrefix()),
         r.r(this.getVersionLabelFormat()),
+        r.r(this.getVersionDescriptionFormat()),
         r.r(this.getRootObject()),
         r.r(this.getIncludes()),
         r.r(this.getExcludes()),
