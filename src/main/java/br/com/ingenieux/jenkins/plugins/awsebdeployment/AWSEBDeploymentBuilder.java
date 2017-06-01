@@ -376,17 +376,31 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                     clientFactory.getService(AWSElasticBeanstalkClient.class);
 
             DescribeEnvironmentsResult
-                    describeEnvironmentsResult =
+                    describeEnvironmentsResultForName =
                     awsElasticBeanstalk.describeEnvironments(
                             new DescribeEnvironmentsRequest().withApplicationName(applicationName)
                                     .withIncludeDeleted(false)
                                     .withEnvironmentNames(environmentName));
 
-            if (1 == describeEnvironmentsResult.getEnvironments().size()) {
+            if (1 == describeEnvironmentsResultForName.getEnvironments().size()) {
                 String
                         environmentId =
-                        describeEnvironmentsResult.getEnvironments().get(0).getEnvironmentId();
+                        describeEnvironmentsResultForName.getEnvironments().get(0).getEnvironmentId();
                 return FormValidation.ok("Environment found (environmentId: %s)", environmentId);
+            }
+
+            DescribeEnvironmentsResult
+                    describeEnvironmentsResultForId =
+                    awsElasticBeanstalk.describeEnvironments(
+                            new DescribeEnvironmentsRequest().withApplicationName(applicationName)
+                                    .withIncludeDeleted(false)
+                                    .withEnvironmentIds(environmentName));
+
+            if (1 == describeEnvironmentsResultForId.getEnvironments().size()) {
+                String
+                        envName =
+                        describeEnvironmentsResultForId.getEnvironments().get(0).getEnvironmentName();
+                return FormValidation.ok("Environment found (environmentName: %s)", envName);
             }
 
             return FormValidation.error("Environment not found");
