@@ -164,7 +164,7 @@ public class ZeroDowntime extends DeployerCommand {
                         .withIncludeDeleted(false));
 
         for (EnvironmentDescription env : environments.getEnvironments()) {
-            if (environmentNames.contains(env.getEnvironmentName())) {
+            if (environmentNames.contains(env.getEnvironmentName()) || environmentNames.contains(env.getEnvironmentId())) {
                 if (WORKER_ENVIRONMENT_TYPE.equals(env.getTier().getName())) {
                     throw new InvalidDeploymentTypeException();
                 }
