@@ -377,7 +377,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 }
             }
 
-            List<String> environmentNames = Lists.<String>newArrayList(environmentName.split(","));
+            List<String> environmentNames = Lists.<String>newArrayList(environmentName.replaceAll("\\s", "").split(","));
 
             AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
 

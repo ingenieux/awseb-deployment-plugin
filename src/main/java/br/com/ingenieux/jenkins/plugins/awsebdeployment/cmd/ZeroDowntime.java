@@ -84,7 +84,7 @@ public class ZeroDowntime extends DeployerCommand {
 
     private List<String> generateEnvironmentNames() {
 
-        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName().split(","));
+        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName().replaceAll("\\s", "").split(","));
 
         for (final ListIterator<String> iterator = newEnvironmentNames.listIterator(); iterator.hasNext(); ) {
             final String environmentName = iterator.next();

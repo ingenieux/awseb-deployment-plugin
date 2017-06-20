@@ -184,7 +184,7 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentNames(Lists.<String>newArrayList(getEnvironmentName().split(","))).
+                    withEnvironmentNames(Lists.<String>newArrayList(getEnvironmentName().replaceAll("\\s", "").split(","))).
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
