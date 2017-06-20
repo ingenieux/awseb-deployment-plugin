@@ -326,7 +326,7 @@ public class DeployerCommand implements Constants {
                         final boolean bHasDifferentVersion = !getVersionLabel().equals(getVersionLabel());
 
                         if (versionCheck) {
-                            log("Versions reported: (current=%s, underDeployment: %s). Should I move on? %s",
+                            log("Versions reported: (current: %s, underDeployment: %s). Should I move on? %s",
                                     environmentDescription.getVersionLabel(),
                                     getVersionLabel(),
                                     String.valueOf(bHasDifferentVersion));
