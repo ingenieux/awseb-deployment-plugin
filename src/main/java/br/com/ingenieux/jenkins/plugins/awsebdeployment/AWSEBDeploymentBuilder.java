@@ -392,18 +392,19 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                     .withIncludeDeleted(false)
                                     .withEnvironmentNames(environmentNames));
 
-            // Check for one environment
+            // Validate multiple environments & display IDs
             if (describeEnvironmentsResult.getEnvironments().size() > 1) {
-//                List<String> environmentIds = new ArrayList<>();
-//                Integer size = describeEnvironmentsResult.getEnvironments().size();
-//                for (Integer i = 0; i < size; i++) {
-//                    environmentIds.add(describeEnvironmentsResult.getEnvironments().get(i).getEnvironmentId());
-//                }
-                // Do something with the Ids?
+                List<String> environmentIds = Lists.<String>newArrayList();
+                Integer size = describeEnvironmentsResult.getEnvironments().size();
+                for (Integer i = 0; i < size; i++) {
+                    environmentIds.add(describeEnvironmentsResult.getEnvironments().get(i).getEnvironmentId());
+                }
 
-                return FormValidation.ok("Multiple environments found.");
+                return FormValidation.ok("Multiple environments found (environmentIDs: %s)", StringUtils.join(environmentIds, ", "));
             }
-            if (1 == describeEnvironmentsResult.getEnvironments().size()) {
+
+            // Validate single environment & display ID
+            if (describeEnvironmentsResult.getEnvironments().size() == 1) {
                 String
                         environmentId =
                         describeEnvironmentsResult.getEnvironments().get(0).getEnvironmentId();
