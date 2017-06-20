@@ -291,10 +291,18 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 return FormValidation.warning("Validation skipped due to parameter usage ('$')");
             }
 
-            if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
-                return FormValidation.error(
-                        "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+            if (value.contains(",")) {
+                if (!value.matches("^[\\p{Alpha}[\\p{Alnum}\\-]{0,39}]+(,\\p{Space}*[\\p{Alpha}[\\p{Alnum}\\-]{0,39}]+)*$") || value.endsWith("-")) {
+                    return FormValidation.error(
+                            "Doesn't look like properly comma separated environment names. Each must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+                }
+            } else {
+                if (!value.matches("^\\p{Alpha}[\\p{Alnum}\\-]{0,39}$") || value.endsWith("-")) {
+                    return FormValidation.error(
+                            "Doesn't look like an environment name. Must be from 4 to 40 characters in length. The name can contain only letters, numbers, and hyphens. It cannot start or end with a hyphen");
+                }
             }
+
             return FormValidation.ok();
         }
 
@@ -369,6 +377,8 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                 }
             }
 
+            List<String> environmentNames = Lists.<String>newArrayList(environmentName.split(","));
+
             AWSClientFactory clientFactory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
 
             AWSElasticBeanstalk
@@ -380,8 +390,19 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                     awsElasticBeanstalk.describeEnvironments(
                             new DescribeEnvironmentsRequest().withApplicationName(applicationName)
                                     .withIncludeDeleted(false)
-                                    .withEnvironmentNames(environmentName));
+                                    .withEnvironmentNames(environmentNames));
 
+            // Check for one environment
+            if (describeEnvironmentsResult.getEnvironments().size() > 1) {
+//                List<String> environmentIds = new ArrayList<>();
+//                Integer size = describeEnvironmentsResult.getEnvironments().size();
+//                for (Integer i = 0; i < size; i++) {
+//                    environmentIds.add(describeEnvironmentsResult.getEnvironments().get(i).getEnvironmentId());
+//                }
+                // Do something with the Ids?
+
+                return FormValidation.ok("Multiple environments found.");
+            }
             if (1 == describeEnvironmentsResult.getEnvironments().size()) {
                 String
                         environmentId =
@@ -396,6 +417,7 @@ public class AWSEBDeploymentBuilder extends Builder implements BuildStep {
                                                @QueryParameter("bucketName") String bucketName,
                                                @QueryParameter("keyPrefix") String keyPrefix,
                                                @QueryParameter("versionLabelFormat") String versionLabelFormat) {
+
             String objectKey = Utils.formatPath("%s/%s-%s.zip",
                                                 defaultIfBlank(keyPrefix, "<ERROR: MISSING KEY PREFIX>"),
                                                 defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),

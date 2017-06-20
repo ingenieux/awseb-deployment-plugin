@@ -30,11 +30,13 @@ import com.amazonaws.services.elasticbeanstalk.model.S3Location;
 import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3Client;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang.Validate;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
@@ -182,33 +184,41 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentNames(getEnvironmentName()).
+                    withEnvironmentNames(Lists.<String>newArrayList(getEnvironmentName().split(","))).
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
 
-            if (1 != result.getEnvironments().size()) {
+
+            if (result.getEnvironments().size() < 1) {
                 log("Unable to lookup environmentId. Skipping Update.");
 
                 return true;
             }
+            StringBuilder csEnvironmentIds = new StringBuilder();
+            for (ListIterator<EnvironmentDescription> i = result.getEnvironments().listIterator(); i.hasNext(); ) {
+                EnvironmentDescription element = i.next();
+                final String environmentLabel = element.getVersionLabel();
+                if (null != environmentLabel && environmentLabel.equals(getVersionLabel())) {
+                    log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
+                            "Skipping.");
+                    csEnvironmentIds.append(element.getEnvironmentId());
+                    if (i.hasNext()) {
+                        csEnvironmentIds.append(",");
+                    }
+                    continue;
+                }
 
-            final EnvironmentDescription environmentDescription = result.getEnvironments().get(0);
-            final String environmentLabel = environmentDescription.getVersionLabel();
+                final String environmentId = element.getEnvironmentId();
 
-            if (null != environmentLabel && environmentLabel.equals(getVersionLabel())) {
-                log("The version to deploy and currently used are the same. Even if you overwrite, AWSEB won't allow you to update." +
-                        "Skipping.");
-
-                return true;
+                log("Using environmentId '%s'", environmentId);
+                csEnvironmentIds.append(environmentId);
+                if (i.hasNext()) {
+                    csEnvironmentIds.append(",");
+                }
             }
 
-            final String environmentId = environmentDescription.getEnvironmentId();
-
-            log("Using environmentId '%s'", environmentId);
-
-            setEnvironmentId(environmentId);
-
+            setEnvironmentId(csEnvironmentIds.toString());
             return false;
         }
     }
@@ -219,14 +229,18 @@ public class DeployerCommand implements Constants {
     public static class UpdateApplicationVersion extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
-            UpdateEnvironmentRequest req = new UpdateEnvironmentRequest().
-                    withEnvironmentId(getEnvironmentId()).
-                    withVersionLabel(getVersionLabel()).
-                    withDescription(getVersionDescription());
+            List<String> environmentIds = Lists.newArrayList(getEnvironmentId().split(","));
 
-            log("Updating environmentId '%s' with Version Label set to '%s'", getEnvironmentId(), getVersionLabel());
+            for (ListIterator<String> i = environmentIds.listIterator(); i.hasNext(); ) {
+                String element = i.next();
+                UpdateEnvironmentRequest req = new UpdateEnvironmentRequest().
+                        withEnvironmentId(element).
+                        withVersionLabel(getVersionLabel()).
+                        withDescription(getVersionDescription());
 
-            getAwseb().updateEnvironment(req);
+                log("Updating environmentId '%s' with Version Label set to '%s'", element, getVersionLabel());
+                getAwseb().updateEnvironment(req);
+            }
 
             return false;
         }
@@ -254,86 +268,105 @@ public class DeployerCommand implements Constants {
 
         @Override
         public boolean perform() throws Exception {
-            Long lastMessageTimestamp = System.currentTimeMillis();
 
-	    Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
-            for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
-                {
-                    final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
-                            new DescribeEventsRequest()
-                                    .withEnvironmentId(getEnvironmentId())
-                                    .withStartTime(new Date(lastMessageTimestamp))
-                    );
+            List<String> environmentIds = Lists.newArrayList(getEnvironmentId().split(","));
 
-                    for (EventDescription eventDescription : describeEventsResult.getEvents()) {
-                        log("%s [%s] %s", eventDescription.getEventDate(), eventDescription.getSeverity(), eventDescription.getMessage());
+            if (environmentIds.size() < 1) {
+                log("Environment not found. Aborting");
 
-                        lastMessageTimestamp = Math.max(eventDescription.getEventDate().getTime(), lastMessageTimestamp);
-                    }
-                }
+                return true;
+            }
 
-                Integer sleepTime = (getDeployerConfig().getSleepTime() != null) ? getDeployerConfig().getSleepTime() : SLEEP_TIME;
-                Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
+            boolean moveOn = false;
 
-                log("Checking health/status of environmentId %s attempt %d/%s", getEnvironmentId(), nAttempt,
-                        maxAttempts);
+            for (Integer i = 0; i < environmentIds.size(); i++) {
 
-                List<EnvironmentDescription> environments =
-                        getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
-                                .withEnvironmentIds(
-                                        Collections.singletonList(getEnvironmentId()))
-                                .withIncludeDeleted(false)
-                        ).getEnvironments();
+                Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
 
-                if (environments.size() != 1) {
-                    log("Environment not found. Aborting");
+                moveOn = false;
 
-                    return true;
-                }
 
-                EnvironmentDescription environmentDescription = environments.get(0);
+                for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
 
-                // Before checking status and readiness, we must check version unless told otherwise
-                {
-                    final boolean bHasDifferentVersion = !getVersionLabel().equals(getVersionLabel());
+                    List<EnvironmentDescription> environments = getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
+                            .withEnvironmentIds(Lists.<String>newArrayList(getEnvironmentId().split(",")))
+                            .withIncludeDeleted(false)
+                    ).getEnvironments();
 
-                    if (versionCheck) {
-                        log("Versions reported: (current=%s, underDeployment: %s). Should I move on? %s",
-                                environmentDescription.getVersionLabel(),
-                                getVersionLabel(),
-                                String.valueOf(bHasDifferentVersion));
-                        if (bHasDifferentVersion) {
-                            continue;
+                    String currentEnvironmentId = environments.get(i).getEnvironmentId();
+
+                    EnvironmentDescription environmentDescription = environments.get(i);
+
+                    Long lastMessageTimestamp = System.currentTimeMillis();
+
+                    if (moveOn)
+                        break;
+                    {
+                        final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
+                                new DescribeEventsRequest()
+                                        .withEnvironmentId(currentEnvironmentId)
+                                        .withStartTime(new Date(lastMessageTimestamp))
+                        );
+
+                        for (EventDescription eventDescription : describeEventsResult.getEvents()) {
+                            log("%s [%s] %s", eventDescription.getEventDate(), eventDescription.getSeverity(), eventDescription.getMessage());
+
+                            lastMessageTimestamp = Math.max(eventDescription.getEventDate().getTime(), lastMessageTimestamp);
                         }
                     }
-                }
 
-                final boolean bHealthyP = GREEN_HEALTH.equals(environmentDescription.getHealth());
-                final boolean bReadyP = STATUS_READY.equals(environmentDescription.getStatus());
+                    Integer sleepTime = (getDeployerConfig().getSleepTime() != null) ? getDeployerConfig().getSleepTime() : SLEEP_TIME;
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
 
-                if (WaitFor.Health == waitFor) {
-                    if (bHealthyP) {
-                        log("Environment Health is 'Green'. Moving on.");
+                    log("Checking health/status of environmentId %s attempt %d/%s", currentEnvironmentId, nAttempt,
+                            maxAttempts);
 
-                        return false;
+                    // Before checking status and readiness, we must check version unless told otherwise
+                    {
+                        final boolean bHasDifferentVersion = !getVersionLabel().equals(getVersionLabel());
+
+                        if (versionCheck) {
+                            log("Versions reported: (current=%s, underDeployment: %s). Should I move on? %s",
+                                    environmentDescription.getVersionLabel(),
+                                    getVersionLabel(),
+                                    String.valueOf(bHasDifferentVersion));
+                            if (bHasDifferentVersion) {
+                                continue;
+                            }
+                        }
                     }
-                } else if (WaitFor.Status == waitFor) {
-                    if (bReadyP) {
-                        log("Environment Status is 'Ready'. Moving on.");
 
-                        return false;
-                    }
-                } else if (WaitFor.Both == waitFor) {
-                    if (bReadyP && bHealthyP) {
-                        log("Environment Status is 'Ready' and Health is 'Green'. Moving on.");
+                    // Check health of the environment
+                    final boolean bHealthyP = GREEN_HEALTH.equals(environmentDescription.getHealth());
+                    final boolean bReadyP = STATUS_READY.equals(environmentDescription.getStatus());
 
-                        return false;
+                    if (WaitFor.Health == waitFor) {
+                        if (bHealthyP) {
+                            log("Environment Health is 'Green'. Moving on.");
+
+                            moveOn = true;
+                        }
+                    } else if (WaitFor.Status == waitFor) {
+                        if (bReadyP) {
+                            log("Environment Status is 'Ready'. Moving on.");
+
+                            moveOn = true;
+                        }
+                    } else if (WaitFor.Both == waitFor) {
+                        if (bReadyP && bHealthyP) {
+                            log("Environment Status is 'Ready' and Health is 'Green'. Moving on.");
+
+                            moveOn = true;
+                        }
                     }
                 }
             }
 
-            log("Environment Update timed-out. Aborting.");
 
+            if (moveOn) {
+                return false;
+            }
+            log("Environment Update timed-out. Aborting.");
             return true;
         }
 
@@ -364,37 +397,49 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             final DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentIds(getEnvironmentId()).
+                    withEnvironmentIds(Lists.<String>newArrayList(getEnvironmentId().split(","))).
                     withIncludeDeleted(false);
 
             final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
 
-            if (1 != result.getEnvironments().size()) {
+            if (result.getEnvironments().size() < 1) {
                 log("Environment w/ environmentId '%s' not found. Aborting.", getEnvironmentId());
 
                 return true;
             }
 
-            String resultingStatus = result.getEnvironments().get(0).getStatus();
-            boolean abortableP = result.getEnvironments().get(0).getAbortableOperationInProgress();
+            // If there are any abortable environment updates set to true.
+            boolean abort = false;
 
-            if (!STATUS_READY.equals(resultingStatus)) {
-                if (abortableP) {
-                    log("AWS Abortable Environment Update Found. Calling abort on AWSEB Service");
+            for (Integer i = 0; i < result.getEnvironments().size(); i++) {
+                String resultingStatus = result.getEnvironments().get(i).getStatus();
+                boolean abortableP = result.getEnvironments().get(i).getAbortableOperationInProgress();
+                String environmentId = result.getEnvironments().get(i).getEnvironmentId();
 
-                    getAwseb().abortEnvironmentUpdate(new AbortEnvironmentUpdateRequest().withEnvironmentId(getEnvironmentId()));
+                if (!STATUS_READY.equals(resultingStatus)) {
+                    if (abortableP) {
+                        log("AWS Abortable Environment Update Found. Calling abort on AWSEB Service");
 
-                    log("Environment Update Aborted. Proceeding.");
+                        getAwseb().abortEnvironmentUpdate(new AbortEnvironmentUpdateRequest().withEnvironmentId(environmentId));
+
+                        log("Environment Update Aborted. Proceeding.");
+                        abort = true;
+                    }
+
+                } else {
+                    log("No pending Environment Updates. Proceeding.");
                 }
+            }
 
+            // Call wait for status if found an abortable env update.
+            if (abort) {
                 WaitForEnvironment waitForStatus = new WaitForEnvironment(WaitFor.Status).withoutVersionCheck();
 
                 waitForStatus.setDeployerContext(c);
 
                 return waitForStatus.perform();
-            } else {
-                log("No pending Environment Updates. Proceeding.");
             }
+
 
             return false;
         }
