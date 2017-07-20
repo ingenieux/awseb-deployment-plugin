@@ -49,7 +49,7 @@ public class DeployerRunner {
     public boolean perform() throws Exception {
         AWSEBDeploymentConfig
                 deploymentConfig =
-                deploymentBuilder.asConfig();//.replacedCopy(new Utils.Replacer(build, listener));
+                deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(build, listener));
 
         FilePath
                 rootFileObject =
