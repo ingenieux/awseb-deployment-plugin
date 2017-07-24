@@ -29,6 +29,7 @@ import com.amazonaws.services.elasticbeanstalk.model.EventDescription;
 import com.amazonaws.services.elasticbeanstalk.model.S3Location;
 import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.util.VersionInfoUtils;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.Validate;
@@ -100,7 +101,7 @@ public class DeployerCommand implements Constants {
             if (null == getLogger())
                 setLogger(getListener().getLogger());
 
-            log("AWSEB Deployment Plugin Version %s", Utils.getVersion());
+            log("AWSEB Deployment Plugin Version %s (aws-java-sdk version: %s)", Utils.getVersion(), VersionInfoUtils.getVersion());
 
             return false;
         }
@@ -144,6 +145,8 @@ public class DeployerCommand implements Constants {
             } else {
                 factory = AWSClientFactory.getClientFactory("", getDeployerConfig().getAwsRegion());
             }
+
+            log ("Using region: '%s'", getDeployerConfig().getAwsRegion());
 
             setS3(factory.getService(AmazonS3Client.class));
             setAwseb(factory.getService(AWSElasticBeanstalkClient.class));

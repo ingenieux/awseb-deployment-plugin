@@ -152,7 +152,14 @@ public class AWSClientFactory implements Constants {
   }
 
   protected String getEndpointFor(ServiceEndpointFormatter formatter) {
-    return String.format(formatter.serviceMask, region);
+    String endpointStr = String.format(formatter.serviceMask, region);
+
+    // Extra Handling for CN_Beijing Region
+    if (region.equalsIgnoreCase("cn-north-1")) {
+      endpointStr += ".cn";
+    }
+
+    return endpointStr;
   }
 
   public <T extends AmazonWebServiceClient> String getEndpointFor(T client) {
