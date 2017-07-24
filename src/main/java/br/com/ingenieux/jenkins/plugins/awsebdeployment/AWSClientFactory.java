@@ -159,7 +159,7 @@ public class AWSClientFactory implements Constants {
       endpointStr += ".cn";
 
       // I HATE KLUDGES
-      if (endpointStr == "s3-cn-north-1.amazonaws.com.cn") {
+      if (endpointStr.equalsIgnoreCase("s3-cn-north-1.amazonaws.com.cn")) {
         endpointStr = "s3.cn-north-1.amazonaws.com.cn";
       }
     }
