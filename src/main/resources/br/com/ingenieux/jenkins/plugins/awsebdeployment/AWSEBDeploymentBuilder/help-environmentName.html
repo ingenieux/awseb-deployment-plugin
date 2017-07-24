@@ -15,5 +15,15 @@
   -->
 
 <div>
-  Optional: AWS EB Environment Name for the Application (e.g.: "myapp-prod-env"). When set and Environment Name exists, it will trigger a UpdateEnvironment Call when the Application Version is created.
+  <p>Optional: AWS EB Environment name(s) to deploy to.</p>
+
+  <p>
+    Can accept single or multiple comma-separated values. Examples:
+    <ul>
+      <li>"my-prod-env" (single environment)</li>
+      <li>"my-dev-env,my-staging-env" (multiple environments)
+    </ul>
+  </p>
+
+  <p>When this value is set and each requested environment exists, an UpdateEnvironment call will be triggered as the Application Version is created.</p>
 </div>
