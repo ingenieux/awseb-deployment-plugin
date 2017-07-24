@@ -21,34 +21,39 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.remoting.Future;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class DeployerRunner {
-    final AbstractBuild<?, ?> build;
+    final Run<?, ?> build;
 
     final Launcher launcher;
 
-    final BuildListener listener;
+    final TaskListener listener;
 
     final AWSEBDeploymentBuilder deploymentBuilder;
+    
+    final FilePath workspace;
 
-    public DeployerRunner(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener, AWSEBDeploymentBuilder deploymentBuilder) {
+    public DeployerRunner(Run<?, ?> build, FilePath ws, Launcher launcher, TaskListener listener, AWSEBDeploymentBuilder deploymentBuilder) {
         this.build = build;
         this.launcher = launcher;
         this.listener = listener;
         this.deploymentBuilder = deploymentBuilder;
+        this.workspace = ws;
     }
 
     public boolean perform() throws Exception {
         AWSEBDeploymentConfig
                 deploymentConfig =
-                deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(build, listener));
+                deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(build, workspace, listener));
 
         FilePath
                 rootFileObject =
-                new FilePath(build.getWorkspace(), deploymentConfig.getRootObject());
+                new FilePath(this.workspace, deploymentConfig.getRootObject());
 
         final DeployerContext
                 deployerContext =

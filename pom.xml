@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>2.11</version>
+        <version>2.19</version>
         <!-- which version of Jenkins is this plugin built against? -->
     </parent>
 
@@ -32,7 +32,7 @@
     <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
 
     <properties>
-        <jenkins.version>1.642.1</jenkins.version>
+        <jenkins.version>2.60.1</jenkins.version>
     </properties>
 
     <licenses>
@@ -124,12 +124,12 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>token-macro</artifactId>
-            <version>1.12.1</version>
+            <version>2.1</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness</artifactId>
-            <version>${jenkins.version}</version>
+            <version>2.23</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -151,14 +151,14 @@
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
-            <url>http://repo.jenkins-ci.org/public/</url>
+            <url>https://repo.jenkins-ci.org/public/</url>
         </repository>
     </repositories>
 
     <pluginRepositories>
         <pluginRepository>
             <id>repo.jenkins-ci.org</id>
-            <url>http://repo.jenkins-ci.org/public/</url>
+            <url>https://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
 </project>
