@@ -157,6 +157,11 @@ public class AWSClientFactory implements Constants {
     // Extra Handling for CN_Beijing Region
     if (region.equalsIgnoreCase("cn-north-1")) {
       endpointStr += ".cn";
+
+      // I HATE KLUDGES
+      if (endpointStr == "s3-cn-north-1.amazonaws.com.cn") {
+        endpointStr = "s3.cn-north-1.amazonaws.com.cn";
+      }
     }
 
     return endpointStr;
