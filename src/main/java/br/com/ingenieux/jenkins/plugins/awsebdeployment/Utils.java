@@ -19,11 +19,13 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
+import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -64,17 +66,19 @@ public class Utils implements Constants {
 
         Run<?, ?> build;
         TaskListener listener;
+        FilePath workspace;
 
-        public Replacer( Run<?, ?> build, TaskListener listener )
+        public Replacer(Run<?, ?> build, FilePath workspace, TaskListener listener )
         {
             this.build = build;
             this.listener = listener;
+            this.workspace = workspace;
         }
 
         public String r( String value )
             throws MacroEvaluationException, IOException, InterruptedException
         {
-            return strip( TokenMacro.expandAll((AbstractBuild<?, ?>) build, listener, value ) );
+            return strip( TokenMacro.expandAll(build, workspace, listener, value ) );
         }
     }
 
