@@ -19,9 +19,9 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 public interface Constants {
     String DEFAULT_REGION = "us-east-1";
 
-    int MAX_ATTEMPTS = 30;
+    int MAX_ATTEMPTS = 90;
 
-    int SLEEP_TIME = 90;
+    int SLEEP_TIME = 30;
 
     int MAX_ENVIRONMENT_NAME_LENGTH = 40;
 

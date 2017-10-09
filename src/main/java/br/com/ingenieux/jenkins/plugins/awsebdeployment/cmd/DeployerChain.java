@@ -89,7 +89,9 @@ public class DeployerChain {
                 new DeployerCommand.CreateApplicationVersion()
         );
 
-        if (c.deployerConfig.isZeroDowntime()) {
+        if (c.deployerConfig.isCreateEnvironmentIfNotExist()) {
+            commandList.add(new CreateOrUpdateEnvironment());
+        } else if (c.deployerConfig.isZeroDowntime()) {
             commandList.add(new ZeroDowntime());
         } else {
             commandList.add(new DeployerCommand.LookupEnvironmentId());
@@ -105,6 +107,10 @@ public class DeployerChain {
             commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both));
         } else {
             commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status));
+        }
+
+        if (c.deployerConfig.isRoute53UpdateRecordSet()) {
+            commandList.add(new UpdateCNAME());
         }
 
         commandList.add(new DeployerCommand.MarkAsSuccessful());
