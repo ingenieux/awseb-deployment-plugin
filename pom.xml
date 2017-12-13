@@ -144,6 +144,31 @@
             <version>1.16.6</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- dependencies on Jenkins Pipeline plugins -->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-job</artifactId>
+            <version>1.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-cps</artifactId>
+            <version>1.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-step-api</artifactId>
+            <version>1.14</version>
+        </dependency>
+
+        <!-- writeFile is useful for test -->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-basic-steps</artifactId>
+            <version>1.14</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <!-- get every artifact through repo.jenkins-ci.org, which proxies all the
