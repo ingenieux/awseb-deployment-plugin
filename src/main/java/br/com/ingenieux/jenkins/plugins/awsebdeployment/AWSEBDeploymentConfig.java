@@ -56,52 +56,20 @@ public class AWSEBDeploymentConfig implements Serializable {
 
   private String credentialId;
 
-  public String getCredentialId() {
-    return this.credentialId;
-  }
-
-  public void setCredentialsId(final String credentialId) {
-    this.credentialId = credentialId;
-  }
-
   /**
    * AWS Region
    */
   private String awsRegion;
-
-  public String getAwsRegion() {
-    return this.awsRegion;
-  }
-
-  public void setAwsRegion(final String awsRegion) {
-    this.awsRegion = awsRegion;
-  }
 
   /**
    * Application Name
    */
   private String applicationName;
 
-  public String getApplicationName() {
-    return this.applicationName;
-  }
-
-  public void setApplicationName(final String applicationName) {
-    this.applicationName = applicationName;
-  }
-
   /**
    * Environment Name
    */
   private String environmentName;
-
-  public String getEnvironmentName() {
-    return this.environmentName;
-  }
-
-  public void setEnvironmentName(final String environmentName) {
-    this.environmentName = environmentName;
-  }
 
   /**
    * Bucket Name

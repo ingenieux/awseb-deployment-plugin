@@ -24,6 +24,11 @@ import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
 
+import lombok.*;
+
+@NoArgsConstructor
+@Data
+@ToString
 public class AWSEBDeploymentStepExecution extends AbstractSynchronousStepExecution<Void> {
 
   @Inject
@@ -66,5 +71,4 @@ public class AWSEBDeploymentStepExecution extends AbstractSynchronousStepExecuti
     return null;
   }
 
-  private static final long serialVersionUID = 1L;
 }

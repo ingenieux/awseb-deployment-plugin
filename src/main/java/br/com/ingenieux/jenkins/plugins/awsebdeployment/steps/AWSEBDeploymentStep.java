@@ -20,144 +20,88 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import lombok.*;
 import javax.annotation.Nonnull;
-
 
 /**
  * Deployment to AWS EB
  */
+@NoArgsConstructor
+@Data
+@ToString
 public class AWSEBDeploymentStep extends AbstractStepImpl
 {
   private String credentialId;
 
-  public String getCredentialId() {
-    return this.credentialId;
-  }
   /**
    * AWS Region
    */
   private String awsRegion;
-
-  public String getAwsRegion() {
-    return this.awsRegion;
-  }
 
   /**
    * Application Name
    */
   private String applicationName;
 
-  public String getApplicationName() {
-    return this.applicationName;
-  }
-
   /**
    * Environment Name
    */
   private String environmentName;
-
-  public String getEnvironmentName() {
-    return this.environmentName;
-  }
 
   /**
    * Bucket Name
    */
   private String bucketName;
 
-  public String getBucketName() {
-    return this.bucketName;
-  }
-
   /**
    * Key Format
    */
   private String keyPrefix;
-
-  public String getKeyPrefix() {
-    return this.keyPrefix;
-  }
 
   /**
    * Version Label
    */
   private String versionLabelFormat;
 
-  public String getVersionLabelFormat() {
-    return this.versionLabelFormat;
-  }
-
   /**
    * Version Description
    */
   private String versionDescriptionFormat;
-
-  public String getVersionDescriptionFormat() {
-    return this.versionDescriptionFormat;
-  }
 
   /**
    * Root Object
    */
   private String rootObject;
 
-  public String getRootObject() {
-    return this.rootObject;
-  }
-
   /**
    * Includes
    */
   private String includes;
-
-  public String getIncludes() {
-    return this.includes;
-  }
 
   /**
    * Excludes
    */
   private String excludes;
 
-  public String getExcludes() {
-    return this.excludes;
-  }
-
   /**
    * Zero Downtime
    */
   private boolean zeroDowntime;
-
-  public boolean isZeroDowntime() {
-    return this.zeroDowntime;
-  }
 
   /**
    * Deploy Sleep Time
    */
   private Integer sleepTime;
 
-  public Integer getSleepTime() {
-    return sleepTime;
-  }
-
   /**
    * Check Health
    */
   private boolean checkHealth;
 
-  public boolean isCheckHealth() {
-    return checkHealth;
-  }
-
   /**
    * Max Number Of Attempts
    */
   private Integer maxAttempts;
-
-  public Integer getMaxAttempts() {
-    return maxAttempts;
-  }
 
   @DataBoundConstructor
   public AWSEBDeploymentStep(String credentialId, String awsRegion, String applicationName,
