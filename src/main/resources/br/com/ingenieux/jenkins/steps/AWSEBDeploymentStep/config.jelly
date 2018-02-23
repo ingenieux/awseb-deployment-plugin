@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry title="Credentials" field="credentialsId">
+    <f:select/>
+  </f:entry>
+  <f:entry field="awsRegion" title="AWS Region">
+    <f:textbox/>
+  </f:entry>
+  <f:entry field="applicationName" title="Application Name">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="environmentName" title="Environment Name">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="bucketName" title="Bucket Name">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="keyPrefix" title="Key Prefix">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="versionLabelFormat" title="Version Label Format">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="versionDescriptionFormat" title="Version Description Format">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="rootObject" title="Root Object">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="includes" title="Includes">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="excludes" title="Excludes">
+     <f:textbox/>
+  </f:entry>
+  <f:entry field="zeroDowntime" title="Zero Downtime">
+    <f:checkbox/>
+  </f:entry>
+  <f:entry field="sleepTime" title="Sleep Time">
+    <f:number/>
+  </f:entry>
+  <f:entry field="checkHealth" title="Check Health">
+    <f:checkbox/>
+  </f:entry>
+  <f:entry field="maxAttempts" title="Max Attempts">
+    <f:number/>
+  </f:entry>
+</j:jelly>

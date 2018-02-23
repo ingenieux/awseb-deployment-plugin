@@ -213,22 +213,22 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
 
     public AWSEBDeploymentConfig asConfig() {
         return new AWSEBDeploymentConfig(
-                credentialId,
-                awsRegion,
-                applicationName,
-                environmentName,
-                bucketName,
-                keyPrefix,
-                versionLabelFormat,
-                versionDescriptionFormat,
-                rootObject,
-                includes,
-                excludes,
-                zeroDowntime,
-                sleepTime,
-                checkHealth,
-                maxAttempts,
-                null);
+            credentialId,
+            awsRegion,
+            applicationName,
+            environmentName,
+            bucketName,
+            keyPrefix,
+            versionLabelFormat,
+            versionDescriptionFormat,
+            rootObject,
+            includes,
+            excludes,
+            zeroDowntime,
+            sleepTime,
+            checkHealth,
+            maxAttempts,
+            null);
     }
 
     @Extension
