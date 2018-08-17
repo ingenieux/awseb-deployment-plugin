@@ -19,10 +19,7 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 import com.amazonaws.AmazonWebServiceClient;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
@@ -30,7 +27,6 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
-import hudson.ProxyConfiguration;
 import org.apache.commons.lang.reflect.ConstructorUtils;
 import org.apache.commons.lang.reflect.FieldUtils;
 
@@ -41,6 +37,7 @@ import java.util.List;
 
 import javax.security.auth.login.CredentialNotFoundException;
 
+import hudson.ProxyConfiguration;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
 
@@ -66,16 +63,14 @@ public class AWSClientFactory implements Constants {
                                                   String awsRegion) {
     AWSCredentialsProvider credentials = new DefaultAWSCredentialsProviderChain();
 
-    if (null != cred) {
-      credentials = new AWSCredentialsProviderChain(new StaticCredentialsProvider(
-          new BasicAWSCredentials(cred.getCredentials().getAWSAccessKeyId(),
-                                  cred.getCredentials().getAWSSecretKey())));
-    }
+    if (null != cred)
+      credentials = cred;
 
     ClientConfiguration clientConfig = new ClientConfiguration();
 
     Jenkins jenkins = Jenkins.getInstance();
-    if (jenkins != null && jenkins.proxy != null) {
+
+    if (jenkins.proxy != null) {
        ProxyConfiguration proxyConfig = jenkins.proxy;
        clientConfig.setProxyHost(proxyConfig.name);
        clientConfig.setProxyPort(proxyConfig.port);
@@ -84,7 +79,8 @@ public class AWSClientFactory implements Constants {
           clientConfig.setProxyPassword(proxyConfig.getPassword());
       }
     }
-    clientConfig.setUserAgent("ingenieux CloudButler/" + Utils.getVersion());
+
+    clientConfig.setUserAgentPrefix("ingenieux CloudButler/" + Utils.getVersion());
 
     return new AWSClientFactory(credentials, clientConfig, awsRegion);
   }
@@ -100,7 +96,7 @@ public class AWSClientFactory implements Constants {
     return getClientFactory(cred, awsRegion);
   }
 
-  public static AmazonWebServicesCredentials lookupNamedCredential(String credentialsId)
+  static AmazonWebServicesCredentials lookupNamedCredential(String credentialsId)
       throws CredentialNotFoundException {
     List<AmazonWebServicesCredentials> credentialList =
         CredentialsProvider.lookupCredentials(
@@ -151,23 +147,23 @@ public class AWSClientFactory implements Constants {
     return resultObj;
   }
 
-  protected String getEndpointFor(ServiceEndpointFormatter formatter) {
+  private String getEndpointFor(ServiceEndpointFormatter formatter) {
     String endpointStr = String.format(formatter.serviceMask, region);
 
-    // Extra Handling for CN_Beijing Region
-    if (region.equalsIgnoreCase("cn-north-1")) {
+    // Extra Handling for CN* Region
+    if (region.startsWith("cn-")) {
       endpointStr += ".cn";
 
       // I HATE KLUDGES
-      if (endpointStr.equalsIgnoreCase("s3-cn-north-1.amazonaws.com.cn")) {
-        endpointStr = "s3.cn-north-1.amazonaws.com.cn";
+      if (endpointStr.matches("s3-cn-\\p{Alpha}+-\\d.amazonaws.com.cn")) {
+        endpointStr = endpointStr.replaceFirst("^s3-cn-", "s3.cn-");
       }
     }
 
     return endpointStr;
   }
 
-  public <T extends AmazonWebServiceClient> String getEndpointFor(T client) {
+  <T extends AmazonWebServiceClient> String getEndpointFor(T client) {
     try {
       URI endpointUri = (URI) FieldUtils.readField(client, "endpoint", true);
 

@@ -16,6 +16,8 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
+import com.google.common.collect.Lists;
+
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.AbortEnvironmentUpdateRequest;
 import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
@@ -31,10 +33,8 @@ import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.util.VersionInfoUtils;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.lang.Validate;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
@@ -92,7 +92,7 @@ public class DeployerCommand implements Constants {
      */
     public static class InitLogger extends DeployerCommand {
         @Override
-        public boolean perform() throws Exception {
+        public boolean perform() {
             /**
              * When Running Remotely, we use loggerOut pipe.
              *
@@ -160,7 +160,7 @@ public class DeployerCommand implements Constants {
      */
     public static class CreateApplicationVersion extends DeployerCommand {
         @Override
-        public boolean perform() throws Exception {
+        public boolean perform() {
             log("Creating application version %s for application %s for path %s",
                     getVersionLabel(), getApplicationName(), getS3ObjectPath());
 
@@ -184,10 +184,10 @@ public class DeployerCommand implements Constants {
      */
     public static class LookupEnvironmentId extends DeployerCommand {
         @Override
-        public boolean perform() throws Exception {
+        public boolean perform() {
             DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentNames(Lists.<String>newArrayList(getEnvironmentName().replaceAll("\\s", "").split(","))).
+                withEnvironmentNames(Lists.newArrayList(getEnvironmentName().replaceAll("\\s", "").split(","))).
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
@@ -231,7 +231,7 @@ public class DeployerCommand implements Constants {
      */
     public static class UpdateApplicationVersion extends DeployerCommand {
         @Override
-        public boolean perform() throws Exception {
+        public boolean perform() {
             List<String> environmentIds = Lists.newArrayList(getEnvironmentId().split(","));
 
             for (ListIterator<String> i = environmentIds.listIterator(); i.hasNext(); ) {
@@ -288,11 +288,10 @@ public class DeployerCommand implements Constants {
 
                 moveOn = false;
 
-
                 for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
 
                     List<EnvironmentDescription> environments = getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
-                            .withEnvironmentIds(Lists.<String>newArrayList(getEnvironmentId().split(",")))
+                        .withEnvironmentIds(Lists.newArrayList(getEnvironmentId().split(",")))
                             .withIncludeDeleted(false)
                     ).getEnvironments();
 
@@ -304,6 +303,7 @@ public class DeployerCommand implements Constants {
 
                     if (moveOn)
                         break;
+
                     {
                         final DescribeEventsResult describeEventsResult = getAwseb().describeEvents(
                                 new DescribeEventsRequest()
@@ -365,15 +365,16 @@ public class DeployerCommand implements Constants {
                 }
             }
 
-
             if (moveOn) {
                 return false;
             }
+
             log("Environment Update timed-out. Aborting.");
+
             return true;
         }
 
-        protected boolean checkVersionLabel(String deployedVersionLabel) throws Exception {
+        protected boolean checkVersionLabel(String deployedVersionLabel) {
             return getVersionLabel().equals(deployedVersionLabel);
         }
     }
@@ -383,7 +384,7 @@ public class DeployerCommand implements Constants {
      */
     public static class MarkAsSuccessful extends DeployerCommand {
         @Override
-        public boolean perform() throws Exception {
+        public boolean perform() {
             log("Deployment marked as 'successful'. Starting post-deployment cleanup.");
 
             setSuccessfulP(true);
@@ -400,7 +401,7 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             final DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
                     withApplicationName(getApplicationName()).
-                    withEnvironmentIds(Lists.<String>newArrayList(getEnvironmentId().split(","))).
+                withEnvironmentIds(Lists.newArrayList(getEnvironmentId().split(","))).
                     withIncludeDeleted(false);
 
             final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);

@@ -19,8 +19,8 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>2.19</version>
-        <!-- which version of Jenkins is this plugin built against? -->
+        <version>3.19</version>
+        <relativePath/>
     </parent>
 
     <groupId>br.com.ingenieux.jenkins.plugins</groupId>
@@ -33,6 +33,7 @@
 
     <properties>
         <jenkins.version>2.60.1</jenkins.version>
+        <maven.test.skip>1</maven.test.skip>
     </properties>
 
     <licenses>
@@ -63,6 +64,12 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>**/version.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
                     <include>**/*.jelly</include>
                     <include>**/*.html</include>
                 </includes>
@@ -114,29 +121,17 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>aws-credentials</artifactId>
-            <version>1.11</version>
+            <version>1.23</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.11.68</version>
+            <version>1.11.341</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>token-macro</artifactId>
             <version>2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.main</groupId>
-            <artifactId>jenkins-test-harness</artifactId>
-            <version>2.23</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>6.1.26</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

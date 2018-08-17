@@ -16,16 +16,17 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult;
 
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
-import hudson.FilePath;
-import hudson.util.DirScanner;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
+import hudson.FilePath;
+import hudson.util.DirScanner;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
@@ -39,6 +40,8 @@ public class BuildAndUploadArchive extends DeployerCommand {
     @Override
     public boolean perform() throws Exception {
         localArchive = getLocalFileObject(getRootFileObject());
+
+      log("Using archive '%s'", localArchive.getAbsolutePath());
 
         if (isBlank(getBucketName())) {
             log("bucketName not set. Calling createStorageLocation");
@@ -63,7 +66,7 @@ public class BuildAndUploadArchive extends DeployerCommand {
     }
 
     @Override
-    public boolean release() throws Exception {
+    public boolean release() {
         if (null != localArchive && localArchive.exists()) {
             log("Cleaning up temporary file %s", localArchive.getAbsolutePath());
 
