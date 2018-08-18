@@ -23,12 +23,10 @@ import com.amazonaws.services.s3.AmazonS3;
 import hudson.FilePath;
 import hudson.model.TaskListener;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 import java.io.PrintStream;
 import java.io.Serializable;
 
-@RequiredArgsConstructor
 @Data
 public class DeployerContext implements Constants, Serializable {
     private static final long serialVersionUID = -1L;
@@ -36,7 +34,7 @@ public class DeployerContext implements Constants, Serializable {
     /**
      * Deployer Config
      */
-    final AWSEBDeploymentConfig deployerConfig;
+    final AWSEBDeploymentConfig config;
 
     /**
      * Root File Object
@@ -47,6 +45,12 @@ public class DeployerContext implements Constants, Serializable {
      * Listener
      */
     final TaskListener listener;
+
+    public DeployerContext(AWSEBDeploymentConfig config, FilePath rootFileObject, TaskListener listener) {
+        this.config = config;
+        this.rootFileObject = rootFileObject;
+        this.listener = listener;
+    }
 
     /**
      * S3 Client
@@ -64,19 +68,20 @@ public class DeployerContext implements Constants, Serializable {
     transient PrintStream logger;
 
     /**
-     * Key Prefix
+     * <p>
+     * Environment Id
      */
-    String keyPrefix;
+    String environmentId;
 
     /**
-     * Bucket Name
+     * S3 Object Key
      */
-    String bucketName;
+    String objectKey;
 
     /**
-     * Application Name
+     * S3 Object Path
      */
-    String applicationName;
+    String s3ObjectPath;
 
     /**
      * Version Label
@@ -87,29 +92,4 @@ public class DeployerContext implements Constants, Serializable {
      * Version Description
      */
     String versionDescription;
-
-    /**
-     * Object Key
-     */
-    String objectKey;
-
-    /**
-     * S3 Object Path
-     */
-    String s3ObjectPath;
-
-    /**
-     * Environment Name
-     */
-    String environmentName;
-
-    /**
-     * Environment Id
-     */
-    String environmentId;
-
-    /**
-     * SuccessfulP
-     */
-    boolean successfulP;
 }

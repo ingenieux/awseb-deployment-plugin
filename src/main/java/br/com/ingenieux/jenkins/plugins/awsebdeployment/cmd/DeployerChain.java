@@ -28,9 +28,9 @@ import java.util.ListIterator;
  * Represents a chain of responsibility of deployment steps
  */
 public class DeployerChain {
-    List<DeployerCommand> commandList;
+    private List<DeployerCommand> commandList;
 
-    final DeployerContext c;
+    private final DeployerContext c;
 
     public DeployerChain(DeployerContext deployerContext) {
         this.c = deployerContext;
@@ -89,24 +89,26 @@ public class DeployerChain {
                 new DeployerCommand.CreateApplicationVersion()
         );
 
-        if (c.deployerConfig.isZeroDowntime()) {
-            commandList.add(new ZeroDowntime());
-        } else {
-            commandList.add(new DeployerCommand.LookupEnvironmentId());
+        if (!c.config.isSkipEnvironmentUpdates()) {
+            if (c.config.isZeroDowntime()) {
+                commandList.add(new ZeroDowntime());
+            } else {
+                commandList.add(new DeployerCommand.LookupEnvironmentId());
 
-            commandList.add(new DeployerCommand.AbortPendingUpdates());
+                commandList.add(new DeployerCommand.AbortPendingUpdates());
 
-            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status).withoutVersionCheck());
+                commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status).withoutVersionCheck());
 
-            commandList.add(new DeployerCommand.UpdateApplicationVersion());
+                commandList.add(new DeployerCommand.UpdateApplicationVersion());
+            }
+
+            if (c.config.isCheckHealth()) {
+                commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both));
+            } else {
+                commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status));
+            }
+
+            commandList.add(new DeployerCommand.VerifyVersion());
         }
-
-        if (c.deployerConfig.isCheckHealth()) {
-            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Both));
-        } else {
-            commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status));
-        }
-
-        commandList.add(new DeployerCommand.MarkAsSuccessful());
     }
 }

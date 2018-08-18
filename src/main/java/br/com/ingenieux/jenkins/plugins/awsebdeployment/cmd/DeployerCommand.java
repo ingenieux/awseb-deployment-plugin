@@ -16,43 +16,28 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
-import com.google.common.collect.Lists;
-
-import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
-import com.amazonaws.services.elasticbeanstalk.model.AbortEnvironmentUpdateRequest;
-import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionRequest;
-import com.amazonaws.services.elasticbeanstalk.model.CreateApplicationVersionResult;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsRequest;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEnvironmentsResult;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEventsRequest;
-import com.amazonaws.services.elasticbeanstalk.model.DescribeEventsResult;
-import com.amazonaws.services.elasticbeanstalk.model.EnvironmentDescription;
-import com.amazonaws.services.elasticbeanstalk.model.EventDescription;
-import com.amazonaws.services.elasticbeanstalk.model.S3Location;
-import com.amazonaws.services.elasticbeanstalk.model.UpdateEnvironmentRequest;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.util.VersionInfoUtils;
-
-import org.apache.commons.lang.Validate;
-
-import java.util.Date;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.TimeUnit;
-
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
+import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
+import com.amazonaws.services.elasticbeanstalk.model.*;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.util.VersionInfoUtils;
+import com.google.common.collect.Sets;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.Data;
 import lombok.experimental.Delegate;
+import org.apache.commons.lang.Validate;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Data
 public class DeployerCommand implements Constants {
     @Delegate
     protected DeployerContext c;
 
-    public void setDeployerContext(DeployerContext c) {
+    void setDeployerContext(DeployerContext c) {
         this.c = c;
     }
 
@@ -88,12 +73,26 @@ public class DeployerCommand implements Constants {
     }
 
     /**
+     * Shortcut for Environment Ids
+     */
+    Collection<String> getEnvironmentIds() {
+        return Sets.newHashSet(c.getEnvironmentId().split(","));
+    }
+
+    /**
+     * Shortcut for Environment Names
+     */
+    Collection<String> getEnvironmentNames() {
+        return Sets.newHashSet(c.config.getEnvironmentName().replaceAll("\\s", "").split(","));
+    }
+
+    /**
      * Represents the logger setup
      */
     public static class InitLogger extends DeployerCommand {
         @Override
         public boolean perform() {
-            /**
+            /*
              * When Running Remotely, we use loggerOut pipe.
              *
              * Locally, we already set logger instance
@@ -113,15 +112,14 @@ public class DeployerCommand implements Constants {
     public static class ValidateParameters extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
-            setKeyPrefix(getDeployerConfig().getKeyPrefix());
-            setBucketName(getDeployerConfig().getBucketName());
-            setApplicationName(getDeployerConfig().getApplicationName());
-            setVersionLabel(getDeployerConfig().getVersionLabelFormat());
-            setVersionDescription(getDeployerConfig().getVersionDescriptionFormat());
-            setEnvironmentName(getDeployerConfig().getEnvironmentName());
+            setVersionLabel(getConfig().getVersionLabelFormat());
+            setVersionDescription(getConfig().getVersionDescriptionFormat());
 
-            Validate.notEmpty(getEnvironmentName(), "Empty/blank environmentName parameter");
-            Validate.notEmpty(getApplicationName(), "Empty/blank applicationName parameter");
+            if (!getConfig().isSkipEnvironmentUpdates()) {
+                Validate.isTrue(!getEnvironmentNames().isEmpty(), "Empty/blank environmentName parameter");
+            }
+
+            Validate.notEmpty(c.config.getApplicationName(), "Empty/blank applicationName parameter");
 
             Validate.notEmpty(getVersionLabel(), "Empty/blank versionLabel parameter");
 
@@ -139,14 +137,9 @@ public class DeployerCommand implements Constants {
         public boolean perform() throws Exception {
             AWSClientFactory factory;
 
-            if (null != getDeployerConfig().getCredentials()) {
-                factory = AWSClientFactory
-                        .getClientFactory(getDeployerConfig().getCredentials(), getDeployerConfig().getAwsRegion());
-            } else {
-                factory = AWSClientFactory.getClientFactory("", getDeployerConfig().getAwsRegion());
-            }
+            factory = AWSClientFactory.getClientFactory(getConfig().getCredentialId(), getConfig().getAwsRegion());
 
-            log ("Using region: '%s'", getDeployerConfig().getAwsRegion());
+            log("Using region: '%s'", getConfig().getAwsRegion());
 
             setS3(factory.getService(AmazonS3Client.class));
             setAwseb(factory.getService(AWSElasticBeanstalkClient.class));
@@ -162,12 +155,12 @@ public class DeployerCommand implements Constants {
         @Override
         public boolean perform() {
             log("Creating application version %s for application %s for path %s",
-                    getVersionLabel(), getApplicationName(), getS3ObjectPath());
+                    getVersionLabel(), c.config.getApplicationName(), getS3ObjectPath());
 
             CreateApplicationVersionRequest cavRequest = new CreateApplicationVersionRequest()
-                    .withApplicationName(getApplicationName())
+                    .withApplicationName(c.config.getApplicationName())
                     .withAutoCreateApplication(true)
-                    .withSourceBundle(new S3Location(getBucketName(), getObjectKey()))
+                    .withSourceBundle(new S3Location(c.config.getBucketName(), getObjectKey()))
                     .withVersionLabel(getVersionLabel())
                     .withDescription(getVersionDescription());
 
@@ -186,12 +179,11 @@ public class DeployerCommand implements Constants {
         @Override
         public boolean perform() {
             DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
-                    withApplicationName(getApplicationName()).
-                withEnvironmentNames(Lists.newArrayList(getEnvironmentName().replaceAll("\\s", "").split(","))).
+                    withApplicationName(c.config.getApplicationName()).
+                    withEnvironmentNames(getEnvironmentNames()).
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
-
 
             if (result.getEnvironments().size() < 1) {
                 log("Unable to lookup environmentId. Skipping Update.");
@@ -232,10 +224,9 @@ public class DeployerCommand implements Constants {
     public static class UpdateApplicationVersion extends DeployerCommand {
         @Override
         public boolean perform() {
-            List<String> environmentIds = Lists.newArrayList(getEnvironmentId().split(","));
+            Collection<String> environmentIds = getEnvironmentIds();
 
-            for (ListIterator<String> i = environmentIds.listIterator(); i.hasNext(); ) {
-                String element = i.next();
+            for (String element : environmentIds) {
                 UpdateEnvironmentRequest req = new UpdateEnvironmentRequest().
                         withEnvironmentId(element).
                         withVersionLabel(getVersionLabel()).
@@ -247,23 +238,24 @@ public class DeployerCommand implements Constants {
 
             return false;
         }
+
     }
 
     /**
      * Waits for the Environment to be Green and Available
      */
-    @SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
+    @SuppressFBWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
     public static class WaitForEnvironment extends DeployerCommand {
         final WaitFor waitFor;
 
         boolean versionCheck;
 
-        public WaitForEnvironment(WaitFor waitFor) {
+        WaitForEnvironment(WaitFor waitFor) {
             this.waitFor = waitFor;
             this.versionCheck = true;
         }
 
-        public WaitForEnvironment withoutVersionCheck() {
+        WaitForEnvironment withoutVersionCheck() {
             this.versionCheck = false;
 
             return this;
@@ -272,7 +264,7 @@ public class DeployerCommand implements Constants {
         @Override
         public boolean perform() throws Exception {
 
-            List<String> environmentIds = Lists.newArrayList(getEnvironmentId().split(","));
+            Collection<String> environmentIds = getEnvironmentIds();
 
             if (environmentIds.size() < 1) {
                 log("Environment not found. Aborting");
@@ -282,16 +274,16 @@ public class DeployerCommand implements Constants {
 
             boolean moveOn = false;
 
-            for (Integer i = 0; i < environmentIds.size(); i++) {
+            for (int i = 0; i < environmentIds.size(); i++) {
 
-                Integer maxAttempts = (getDeployerConfig().getMaxAttempts() != null) ? getDeployerConfig().getMaxAttempts() : MAX_ATTEMPTS;
+                Integer maxAttempts = (getConfig().getMaxAttempts() != null) ? getConfig().getMaxAttempts() : MAX_ATTEMPTS;
 
                 moveOn = false;
 
                 for (int nAttempt = 1; nAttempt <= maxAttempts; nAttempt++) {
 
                     List<EnvironmentDescription> environments = getAwseb().describeEnvironments(new DescribeEnvironmentsRequest()
-                        .withEnvironmentIds(Lists.newArrayList(getEnvironmentId().split(",")))
+                            .withEnvironmentIds(getEnvironmentIds())
                             .withIncludeDeleted(false)
                     ).getEnvironments();
 
@@ -299,7 +291,7 @@ public class DeployerCommand implements Constants {
 
                     EnvironmentDescription environmentDescription = environments.get(i);
 
-                    Long lastMessageTimestamp = System.currentTimeMillis();
+                    long lastMessageTimestamp = System.currentTimeMillis();
 
                     if (moveOn)
                         break;
@@ -318,7 +310,7 @@ public class DeployerCommand implements Constants {
                         }
                     }
 
-                    Integer sleepTime = (getDeployerConfig().getSleepTime() != null) ? getDeployerConfig().getSleepTime() : SLEEP_TIME;
+                    int sleepTime = (getConfig().getSleepTime() != null) ? getConfig().getSleepTime() : SLEEP_TIME;
                     Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
 
                     log("Checking health/status of environmentId %s attempt %d/%s", currentEnvironmentId, nAttempt,
@@ -380,28 +372,14 @@ public class DeployerCommand implements Constants {
     }
 
     /**
-     * Marks the deployment as successful
-     */
-    public static class MarkAsSuccessful extends DeployerCommand {
-        @Override
-        public boolean perform() {
-            log("Deployment marked as 'successful'. Starting post-deployment cleanup.");
-
-            setSuccessfulP(true);
-
-            return false;
-        }
-    }
-
-    /**
      * Abort Pending Environment Updates
      */
     public static class AbortPendingUpdates extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
             final DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
-                    withApplicationName(getApplicationName()).
-                withEnvironmentIds(Lists.newArrayList(getEnvironmentId().split(","))).
+                    withApplicationName(c.config.getApplicationName()).
+                    withEnvironmentIds(getEnvironmentIds()).
                     withIncludeDeleted(false);
 
             final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
@@ -415,7 +393,7 @@ public class DeployerCommand implements Constants {
             // If there are any abortable environment updates set to true.
             boolean abort = false;
 
-            for (Integer i = 0; i < result.getEnvironments().size(); i++) {
+            for (int i = 0; i < result.getEnvironments().size(); i++) {
                 String resultingStatus = result.getEnvironments().get(i).getStatus();
                 boolean abortableP = result.getEnvironments().get(i).getAbortableOperationInProgress();
                 String environmentId = result.getEnvironments().get(i).getEnvironmentId();
@@ -446,6 +424,49 @@ public class DeployerCommand implements Constants {
 
 
             return false;
+        }
+    }
+
+    public static class VerifyVersion extends DeployerCommand {
+        @Override
+        public boolean release() {
+            final Collection<String> environmentIds = getEnvironmentIds();
+
+            final DescribeEnvironmentsRequest req = new DescribeEnvironmentsRequest().
+                    withApplicationName(c.config.getApplicationName()).
+                    withEnvironmentIds(environmentIds).
+                    withIncludeDeleted(false);
+
+            final Map<String, EnvironmentDescription> environmentMap = new TreeMap<>();
+
+            final DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
+
+            for (EnvironmentDescription environment : result.getEnvironments())
+                environmentMap.put(environment.getEnvironmentId(), environment);
+
+            boolean bInvalid = false;
+
+            for (String environmentId : environmentIds) {
+                EnvironmentDescription curEnv = environmentMap.get(environmentId);
+
+                if (null == curEnv) {
+                    log("WARNING: Environment Not found (environmentId=%s)", environmentId);
+
+                    bInvalid = false;
+
+                    continue;
+                }
+
+                if (!curEnv.getVersionLabel().equals(c.versionLabel)) {
+                    log("WARNING: Environment (environmentId='%s') doesn't have matching versionLabels (expected: %s; found: %s)", environmentId, c.getVersionLabel(), curEnv.getVersionLabel());
+
+                    bInvalid = false;
+                } else {
+                    log("VersionLabels are matching for environmentId:'%s' and version:'%s')", environmentId, c.getVersionLabel());
+                }
+            }
+
+            return bInvalid;
         }
     }
 }

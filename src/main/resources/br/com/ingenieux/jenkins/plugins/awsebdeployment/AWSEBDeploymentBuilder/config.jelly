@@ -47,7 +47,12 @@
             <f:textbox/>
         </f:entry>
 
-        <f:validateButton method="validateCoordinates" title="Validate Coordinates" with="credentialId,awsRegion,applicationName,environmentName"/>
+        <f:entry title="Skip Environment Updates" field="skipEnvironmentUpdates">
+            <f:checkbox/>
+        </f:entry>
+
+        <f:validateButton method="validateCoordinates" title="Validate Coordinates"
+                          with="credentialId,awsRegion,applicationName,environmentName,skipEnvironmentUpdates"/>
     </f:section>
 
     <f:section title="Packaging">
@@ -78,7 +83,7 @@
         </f:entry>
     </f:section>
 
-    <f:section title="Version and Deployment">
+    <f:section title="Versioning">
         <f:entry title="Version Label Format" field="versionLabelFormat">
             <f:textbox/>
         </f:entry>
@@ -87,6 +92,11 @@
             <f:textbox/>
         </f:entry>
 
+        <f:validateButton method="validateUpload" title="Explain Upload"
+                          with="applicationName,bucketName,keyPrefix,versionLabelFormat"/>
+    </f:section>
+
+    <f:section title="Deployment">
         <f:entry title="Zero downtime?" field="zeroDowntime">
             <f:checkbox/>
         </f:entry>
@@ -102,8 +112,5 @@
         <f:entry title="Number Of Attempts" field="maxAttempts">
             <f:textbox default="30"/>
         </f:entry>
-
-        <f:validateButton method="validateUpload" title="Explain Upload"
-                          with="applicationName,bucketName,keyPrefix,versionLabelFormat"/>
     </f:section>
 </j:jelly>

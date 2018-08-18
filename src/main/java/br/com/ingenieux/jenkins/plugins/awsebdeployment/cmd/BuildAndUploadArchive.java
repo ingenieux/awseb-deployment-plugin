@@ -16,24 +16,22 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
 import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult;
-
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.FilePath;
+import hudson.util.DirScanner;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
-
-import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
-import hudson.FilePath;
-import hudson.util.DirScanner;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * Builds and Uploads the Zip Archive
  */
-@SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS","OBL_UNSATISFIED_OBLIGATION"})
+@SuppressFBWarnings({"EQ_DOESNT_OVERRIDE_EQUALS", "OBL_UNSATISFIED_OBLIGATION"})
 public class BuildAndUploadArchive extends DeployerCommand {
     private File localArchive = null;
 
@@ -43,24 +41,24 @@ public class BuildAndUploadArchive extends DeployerCommand {
 
       log("Using archive '%s'", localArchive.getAbsolutePath());
 
-        if (isBlank(getBucketName())) {
+        if (isBlank(c.config.getBucketName())) {
             log("bucketName not set. Calling createStorageLocation");
 
             final CreateStorageLocationResult storageLocation = getAwseb().createStorageLocation();
 
             log("Using s3 Bucket '%s'", storageLocation.getS3Bucket());
 
-            setBucketName(storageLocation.getS3Bucket());
+            c.config.setBucketName(storageLocation.getS3Bucket());
         }
 
-        setObjectKey(Utils.formatPath("%s/%s-%s.zip", getKeyPrefix(), getApplicationName(),
+        setObjectKey(Utils.formatPath("%s/%s-%s.zip", c.config.getKeyPrefix(), c.config.getApplicationName(),
                 getVersionLabel()));
 
-        setS3ObjectPath("s3://" + Utils.formatPath("%s/%s", getBucketName(), getObjectKey()));
+        setS3ObjectPath("s3://" + Utils.formatPath("%s/%s", c.config.getBucketName(), getObjectKey()));
 
         log("Uploading file %s as %s", localArchive.getName(), getS3ObjectPath());
 
-        getS3().putObject(getBucketName(), getObjectKey(), localArchive);
+        getS3().putObject(c.config.getBucketName(), getObjectKey(), localArchive);
 
         return false;
     }
@@ -86,11 +84,11 @@ public class BuildAndUploadArchive extends DeployerCommand {
         } else {
             log("Zipping contents of Root File Object (%s) into tmp file %s (includes=%s, excludes=%s)",
                     rootFileObject.getName(), resultFile.getName(),
-                    getDeployerConfig().getIncludes(), getDeployerConfig().getExcludes());
+                    getConfig().getIncludes(), getConfig().getExcludes());
 
             rootFileObject.zip(new FileOutputStream(resultFile),
-                    new DirScanner.Glob(getDeployerConfig().getIncludes(),
-                            getDeployerConfig().getExcludes()));
+                    new DirScanner.Glob(getConfig().getIncludes(),
+                            getConfig().getExcludes()));
         }
 
         return resultFile;

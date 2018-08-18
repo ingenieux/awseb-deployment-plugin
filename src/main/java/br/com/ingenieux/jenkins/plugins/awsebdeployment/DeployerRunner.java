@@ -19,54 +19,47 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.Future;
+import hudson.remoting.VirtualChannel;
+import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
+import java.io.IOException;
 
 public class DeployerRunner {
-    final Run<?, ?> build;
+    private final Run<?, ?> build;
 
-    final Launcher launcher;
+    private final Launcher launcher;
 
-    final TaskListener listener;
+    private final TaskListener listener;
 
-    final AWSEBDeploymentBuilder deploymentBuilder;
-    
-    final FilePath workspace;
+    private final FilePath workspace;
 
-    public DeployerRunner(Run<?, ?> build, FilePath ws, Launcher launcher, TaskListener listener, AWSEBDeploymentBuilder deploymentBuilder) {
+    private final AWSEBDeploymentConfig config;
+
+    DeployerRunner(Run<?, ?> build, FilePath ws, Launcher launcher, TaskListener listener, AWSEBDeploymentBuilder deploymentBuilder) throws InterruptedException, MacroEvaluationException, IOException {
         this.build = build;
         this.launcher = launcher;
         this.listener = listener;
-        this.deploymentBuilder = deploymentBuilder;
         this.workspace = ws;
+        this.config = deploymentBuilder.getConfig().replacedCopy(new Utils.Replacer(build, workspace, listener));
     }
 
     public boolean perform() throws Exception {
-        AWSEBDeploymentConfig
-                deploymentConfig =
-                deploymentBuilder.asConfig().replacedCopy(new Utils.Replacer(build, workspace, listener));
-
-        FilePath
-                rootFileObject =
-                new FilePath(this.workspace, deploymentConfig.getRootObject());
+        FilePath rootFileObject = new FilePath(this.workspace, config.getRootObject());
 
         final DeployerContext
-                deployerContext =
-                new DeployerContext(deploymentConfig, rootFileObject, listener);
+                deployerContext = new DeployerContext(config, rootFileObject, listener);
 
-        if (!isBlank(deploymentConfig.getCredentialId())) {
-            deploymentConfig.setCredentials(
-                    AWSClientFactory.lookupNamedCredential(deploymentConfig.getCredentialId()));
-        }
+        final VirtualChannel channel = launcher.getChannel();
+
+        if (null == channel)
+            throw new IllegalStateException("Null Channel (?)");
 
         final Future<Boolean>
                 booleanFuture =
-                launcher.getChannel().callAsync(new SlaveDeployerCallable(deployerContext));
+                channel.callAsync(new SlaveDeployerCallable(deployerContext));
 
         return booleanFuture.get();
     }

@@ -18,34 +18,33 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.google.common.collect.Lists;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
 
-import edu.umd.cs.findbugs.annotations.SuppressWarnings;
-
 import static org.apache.commons.lang.StringUtils.isNotBlank;
-import static org.apache.commons.lang.StringUtils.split;
 
-@SuppressWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
+@SuppressFBWarnings({"EQ_DOESNT_OVERRIDE_EQUALS"})
 public class ZeroDowntime extends DeployerCommand {
-    List<String> environmentNames;
+    private List<String> environmentNames;
 
-    String environmentId;
+    private String environmentId;
 
-    String templateName;
+    private String templateName;
 
     @Override
     public boolean perform() throws Exception {
         environmentNames = generateEnvironmentNames();
 
-        EnvironmentDescription environmentDescription = null;
+        EnvironmentDescription environmentDescription;
 
-        for(ListIterator<String> i = environmentNames.listIterator(); i.hasNext();) {
+        for (String environmentName : environmentNames) {
             try {
-                List<String> envName = Lists.newArrayList(i.next());
+                List<String> envName = Lists.newArrayList(environmentName);
 
                 environmentDescription = lookupEnvironmentIds(envName);
 
@@ -83,15 +82,14 @@ public class ZeroDowntime extends DeployerCommand {
     }
 
     private List<String> generateEnvironmentNames() {
-
-        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentName().replaceAll("\\s", "").split(","));
+        List<String> newEnvironmentNames = Lists.newArrayList(getEnvironmentNames());
 
         for (final ListIterator<String> iterator = newEnvironmentNames.listIterator(); iterator.hasNext(); ) {
             final String environmentName = iterator.next();
 
             boolean tooLong = environmentName.length() > (MAX_ENVIRONMENT_NAME_LENGTH - 2);
 
-            if(tooLong){
+            if (tooLong) {
                 String shortenedEnvironmentName = environmentName.substring(0, environmentName.length() - 2);
                 iterator.set(shortenedEnvironmentName + "-2");
             }
@@ -102,8 +100,8 @@ public class ZeroDowntime extends DeployerCommand {
 
     private String createEnvironment(String versionLabel, String versionDescription, String templateName,
                                      List<String> environmentNames) throws InvalidDeploymentTypeException {
-        log("Creating environment based on application %s/%s from version %s and configuration template %s",
-                getApplicationName(), getEnvironmentName(), versionLabel, templateName);
+        log("Creating environment based on application %s @ %s from version %s and configuration template %s",
+                c.config.getApplicationName(), StringUtils.join(environmentNames, "/"), versionLabel, templateName);
 
         String newEnvironmentName = environmentNames.get(0);
 
@@ -119,7 +117,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         CreateEnvironmentRequest request = new CreateEnvironmentRequest()
                 .withEnvironmentName(newEnvironmentName).withVersionLabel(versionLabel)
-                .withDescription(versionDescription).withApplicationName(getApplicationName())
+                .withDescription(versionDescription).withApplicationName(c.config.getApplicationName())
                 .withTemplateName(templateName);
 
         return getAwseb().createEnvironment(request).getEnvironmentId();
@@ -155,11 +153,11 @@ public class ZeroDowntime extends DeployerCommand {
     }
 
     private String createConfigurationTemplate(String environmentId) {
-        log("Creating configuration template from application %s with label %s", getApplicationName(),
+        log("Creating configuration template from application %s with label %s", c.config.getApplicationName(),
                 getVersionLabel());
 
         CreateConfigurationTemplateRequest request = new CreateConfigurationTemplateRequest()
-                .withApplicationName(getApplicationName())
+                .withApplicationName(c.config.getApplicationName())
                 .withEnvironmentId(environmentId)
                 .withTemplateName("tmp-" + getVersionLabel());
 
@@ -169,7 +167,7 @@ public class ZeroDowntime extends DeployerCommand {
     private EnvironmentDescription lookupEnvironmentIds(List<String> environmentNames) throws InvalidEnvironmentsSizeException, InvalidDeploymentTypeException {
         DescribeEnvironmentsResult environments = getAwseb()
                 .describeEnvironments(new DescribeEnvironmentsRequest()
-                        .withApplicationName(getApplicationName())
+                        .withApplicationName(c.config.getApplicationName())
                         .withIncludeDeleted(false));
 
         for (EnvironmentDescription env : environments.getEnvironments()) {
@@ -182,7 +180,7 @@ public class ZeroDowntime extends DeployerCommand {
             }
         }
 
-        throw new InvalidEnvironmentsSizeException(getApplicationName(), environmentNames.get(0), environments.getEnvironments().size());
+        throw new InvalidEnvironmentsSizeException(c.config.getApplicationName(), environmentNames.get(0), environments.getEnvironments().size());
     }
 
     @Override
@@ -205,13 +203,13 @@ public class ZeroDowntime extends DeployerCommand {
     private void deleteTemplateName(String templateName) {
         log("Excluding template name '%s'", templateName);
 
-        getAwseb().deleteConfigurationTemplate(new DeleteConfigurationTemplateRequest(getApplicationName(), templateName));
+        getAwseb().deleteConfigurationTemplate(new DeleteConfigurationTemplateRequest(c.config.getApplicationName(), templateName));
     }
 
     public static class InvalidDeploymentTypeException extends Exception {
         private static final long serialVersionUID = 1L;
 
-        public InvalidDeploymentTypeException() {
+        InvalidDeploymentTypeException() {
             super("Invalid Deployment Type");
         }
     }
@@ -226,7 +224,7 @@ public class ZeroDowntime extends DeployerCommand {
 
         private final int environmentCount;
 
-        public InvalidEnvironmentsSizeException(String applicationName, String environmentName, int environmentCount) {
+        InvalidEnvironmentsSizeException(String applicationName, String environmentName, int environmentCount) {
             super();
             this.applicationName = applicationName;
             this.environmentName = environmentName;

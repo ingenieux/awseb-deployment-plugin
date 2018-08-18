@@ -16,18 +16,17 @@
 
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
-import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import lombok.*;
+import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 import java.io.IOException;
 import java.io.Serializable;
 
-import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
-
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Data
-@ToString(exclude={"credentials"})
+@ToString
 public class AWSEBDeploymentConfig implements Serializable {
   private static final long serialVersionUID = 1L;
 
@@ -107,9 +106,9 @@ public class AWSEBDeploymentConfig implements Serializable {
   private Integer maxAttempts;
 
   /**
-   * Credentials
+   * Skip Environment Updates?
    */
-  private AmazonWebServicesCredentials credentials;
+  private boolean skipEnvironmentUpdates;
 
   /**
    * Copy Factory
@@ -117,24 +116,24 @@ public class AWSEBDeploymentConfig implements Serializable {
    * @param r replacer
    * @return replaced copy
    */
-  public AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) throws MacroEvaluationException, IOException, InterruptedException {
-    return new AWSEBDeploymentConfig(
-        r.r(this.getCredentialId()),
-        r.r(this.getAwsRegion()),
-        r.r(this.getApplicationName()),
-        r.r(this.getEnvironmentName()),
-        r.r(this.getBucketName()),
-        r.r(this.getKeyPrefix()),
-        r.r(this.getVersionLabelFormat()),
-        r.r(this.getVersionDescriptionFormat()),
-        r.r(this.getRootObject()),
-        r.r(this.getIncludes()),
-        r.r(this.getExcludes()),
-        this.isZeroDowntime(),
-        this.getSleepTime(),
-        this.isCheckHealth(),
-        this.getMaxAttempts(),
-        this.credentials
-    );
+  AWSEBDeploymentConfig replacedCopy(Utils.Replacer r) throws MacroEvaluationException, IOException, InterruptedException {
+    // FIELDLIST CHECK
+    return AWSEBDeploymentConfig.builder()
+            .credentialId(r.r(this.credentialId))
+            .awsRegion(r.r(this.awsRegion))
+            .applicationName(r.r(this.applicationName))
+            .environmentName(r.r(this.environmentName))
+            .bucketName(r.r(this.bucketName))
+            .keyPrefix(r.r(this.keyPrefix))
+            .versionLabelFormat(r.r(this.versionLabelFormat))
+            .versionDescriptionFormat(r.r(this.versionDescriptionFormat))
+            .rootObject(r.r(this.rootObject))
+            .includes(r.r(this.includes))
+            .excludes(r.r(this.excludes))
+            .zeroDowntime(this.zeroDowntime)
+            .sleepTime(this.sleepTime)
+            .checkHealth(this.checkHealth)
+            .skipEnvironmentUpdates(this.skipEnvironmentUpdates)
+            .build();
   }
 }
