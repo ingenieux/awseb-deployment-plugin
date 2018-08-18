@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.util.VersionInfoUtils;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.Util;
 import lombok.Data;
 import lombok.experimental.Delegate;
 import org.apache.commons.lang.Validate;
@@ -68,7 +69,9 @@ public class DeployerCommand implements Constants {
      * @param args    args
      */
     protected void log(String message, Object... args) {
-        getLogger().printf(message, args);
+        String formattedMessage = String.format(message, args);
+
+        getLogger().print(Util.escape(formattedMessage));
         getLogger().println();
     }
 
@@ -184,6 +187,7 @@ public class DeployerCommand implements Constants {
                     withIncludeDeleted(false);
 
             DescribeEnvironmentsResult result = getAwseb().describeEnvironments(req);
+
 
             if (result.getEnvironments().size() < 1) {
                 log("Unable to lookup environmentId. Skipping Update.");
@@ -368,6 +372,20 @@ public class DeployerCommand implements Constants {
 
         protected boolean checkVersionLabel(String deployedVersionLabel) {
             return getVersionLabel().equals(deployedVersionLabel);
+        }
+    }
+
+    /**
+     * Marks the deployment as successful
+     */
+    public static class MarkAsSuccessful extends DeployerCommand {
+        @Override
+        public boolean perform() {
+            log("Deployment marked as 'successful'. Starting post-deployment cleanup.");
+
+            setSuccessfulP(true);
+
+            return false;
         }
     }
 

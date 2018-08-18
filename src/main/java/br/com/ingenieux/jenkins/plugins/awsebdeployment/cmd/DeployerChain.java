@@ -108,6 +108,8 @@ public class DeployerChain {
                 commandList.add(new DeployerCommand.WaitForEnvironment(WaitFor.Status));
             }
 
+            commandList.add(new DeployerCommand.MarkAsSuccessful());
+
             commandList.add(new DeployerCommand.VerifyVersion());
         }
     }

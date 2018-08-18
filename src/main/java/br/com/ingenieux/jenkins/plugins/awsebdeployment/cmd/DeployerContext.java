@@ -92,4 +92,9 @@ public class DeployerContext implements Constants, Serializable {
      * Version Description
      */
     String versionDescription;
+
+    /**
+     * Successfull?
+     */
+    boolean successfulP;
 }

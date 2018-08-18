@@ -36,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.*;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
@@ -351,8 +352,8 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
             try {
                 w.printf("<ul>%n");
 
-                w.printf("<li>Building Client (credentialId: '%s', region: '%s')</li>%n", credentialId,
-                        awsRegion);
+                w.printf("<li>Building Client (credentialId: '%s', region: '%s')</li>%n", Util.escape(credentialId),
+                        Util.escape(awsRegion));
 
                 AWSClientFactory factory = AWSClientFactory.getClientFactory(credentialId, awsRegion);
 
@@ -360,7 +361,7 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
 
                 String s3Endpoint = factory.getEndpointFor(amazonS3);
 
-                w.printf("<li>Testing Amazon S3 Service (endpoint: %s)</li>%n", s3Endpoint);
+                w.printf("<li>Testing Amazon S3 Service (endpoint: %s)</li>%n", Util.escape(s3Endpoint));
 
                 w.printf("<li>Buckets Found: %d</li>%n", amazonS3.listBuckets().size());
 
@@ -373,7 +374,7 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
                         factory.getEndpointFor(awsElasticBeanstalk);
 
                 w.printf("<li>Testing AWS Elastic Beanstalk Service (endpoint: %s)</li>%n",
-                        awsEBEndpoint);
+                        Util.escape(awsEBEndpoint));
 
                 List<String>
                         applicationList =
@@ -386,7 +387,7 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
                                 });
 
                 w.printf("<li>Applications Found: %d (%s)</li>%n", applicationList.size(),
-                        StringUtils.join(applicationList, ", "));
+                        Util.escape(StringUtils.join(applicationList, ", ")));
 
                 w.printf("</ul>%n");
 
@@ -462,9 +463,9 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
                     defaultIfBlank(applicationName, "<ERROR: MISSING APPLICATION NAME>"),
                     defaultIfBlank(versionLabelFormat, "<ERROR: MISSING VERSION LABEL FORMAT>"));
 
-            String targetPath = String.format("s3://%s/%s",
+            String targetPath = Util.escape(String.format("s3://%s/%s",
                     defaultIfBlank(bucketName, "[default account bucket for region]"),
-                    objectKey);
+                    objectKey));
 
             final String resultingMessage = format("Your object will be uploaded to S3 as: <code>%s</code> (<i>note replacements will apply</i>)", targetPath);
 
