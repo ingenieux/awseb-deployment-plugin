@@ -39,6 +39,9 @@ public class SlaveDeployerCallable extends MasterToSlaveCallable<Boolean, Except
   public Boolean call() throws Exception {
     DeployerChain deployerChain = new DeployerChain(deployerContext);
 
-    return deployerChain.perform();
+    if (deployerChain.perform()) {
+      throw new Exception("Deployment aborted");
+    };
+    return false;
   }
 }
