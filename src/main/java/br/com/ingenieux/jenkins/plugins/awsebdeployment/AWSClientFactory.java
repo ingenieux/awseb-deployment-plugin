@@ -164,6 +164,15 @@ public class AWSClientFactory implements Constants {
       }
     }
 
+    // Extra Handling for CN_Ningxia Region
+    if (region.equalsIgnoreCase("cn-northwest-1")) {
+      endpointStr += ".cn";
+
+      if (endpointStr.equalsIgnoreCase("s3-cn-northwest-1.amazonaws.com.cn")) {
+        endpointStr = "s3.cn-northwest-1.amazonaws.com.cn";
+      }
+    }
+
     return endpointStr;
   }
 
