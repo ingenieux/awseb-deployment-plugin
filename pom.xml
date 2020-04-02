@@ -20,12 +20,12 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>3.19</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <groupId>br.com.ingenieux.jenkins.plugins</groupId>
     <artifactId>awseb-deployment-plugin</artifactId>
-    <version>0.3.20-SNAPSHOT</version>
+    <version>0.3.20</version>
     <packaging>hpi</packaging>
 
     <name>AWSEB Deployment Plugin</name>
@@ -114,7 +114,7 @@
         <connection>scm:git:ssh://github.com/ingenieux/awseb-deployment-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/ingenieux/awseb-deployment-plugin.git</developerConnection>
         <url>https://wiki.jenkins-ci.org/display/JENKINS/AWSEB+Deployment+Plugin</url>
-        <tag>awseb-deployment-plugin-0.3.8</tag>
+        <tag>awseb-deployment-plugin-0.3.20</tag>
     </scm>
 
     <dependencies>
