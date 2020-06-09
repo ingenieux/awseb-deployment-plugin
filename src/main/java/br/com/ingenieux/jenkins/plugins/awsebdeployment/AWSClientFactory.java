@@ -152,6 +152,14 @@ public class AWSClientFactory implements Constants {
             }
         }
 
+        // Extra Handling for AF* Region
+        if (region.startsWith("af-")) {
+            if (endpointStr.matches("s3-af-\\p{Alpha}+-\\d.amazonaws.com")) {
+                endpointStr = endpointStr.replaceFirst("s3-af-", "s3.af-");
+            }
+        }
+
+
         return endpointStr;
     }
 
