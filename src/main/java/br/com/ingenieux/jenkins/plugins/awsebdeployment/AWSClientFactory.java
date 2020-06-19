@@ -90,9 +90,14 @@ public class AWSClientFactory implements Constants {
 
     private static AmazonWebServicesCredentials lookupNamedCredential(String credentialsId)
             throws CredentialNotFoundException {
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+
+        if (jenkins == null)
+            throw new RuntimeException("Missing Jenkins Instance");
+
         List<AmazonWebServicesCredentials> credentialList =
                 CredentialsProvider.lookupCredentials(
-                        AmazonWebServicesCredentials.class, Jenkins.get(), ACL.SYSTEM,
+                        AmazonWebServicesCredentials.class, jenkins, ACL.SYSTEM,
                         Collections.<DomainRequirement>emptyList());
 
         AmazonWebServicesCredentials cred =
