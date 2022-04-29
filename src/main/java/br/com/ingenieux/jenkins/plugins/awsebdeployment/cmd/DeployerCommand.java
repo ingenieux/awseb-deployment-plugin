@@ -19,12 +19,16 @@ package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSClientFactory;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Utils;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClient;
 import com.amazonaws.services.elasticbeanstalk.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.util.VersionInfoUtils;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.ProxyConfiguration;
 import hudson.Util;
 import lombok.Data;
 import lombok.experimental.Delegate;
@@ -138,11 +142,13 @@ public class DeployerCommand implements Constants {
     public static class InitAWS extends DeployerCommand {
         @Override
         public boolean perform() throws Exception {
-            AWSClientFactory factory;
+            AWSCredentials credentials = c.getCredentials().toAWSCredentials();
+            AWSStaticCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
 
-            factory = AWSClientFactory.getClientFactory(getConfig().getCredentialId(), getConfig().getAwsRegion());
+            String region = getConfig().getAwsRegion();
+            AWSClientFactory factory = AWSClientFactory.getClientFactory(provider, region, c.getProxy());
 
-            log("Using region: '%s'", getConfig().getAwsRegion());
+            log("Using region: '%s'", region);
 
             setS3(factory.getService(AmazonS3Client.class));
             setAwseb(factory.getService(AWSElasticBeanstalkClient.class));

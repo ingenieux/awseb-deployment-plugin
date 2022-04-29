@@ -20,12 +20,10 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import hudson.FilePath;
-import hudson.model.AbstractBuild;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;

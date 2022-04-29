@@ -17,19 +17,24 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd.DeployerContext;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.ProxyConfiguration;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.Future;
 import hudson.remoting.VirtualChannel;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 
 import java.io.IOException;
 
-public class DeployerRunner {
-    private final Run<?, ?> build;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
+public class DeployerRunner {
     private final Launcher launcher;
 
     private final TaskListener listener;
@@ -38,8 +43,7 @@ public class DeployerRunner {
 
     private final AWSEBDeploymentConfig config;
 
-    DeployerRunner(Run<?, ?> build, FilePath ws, Launcher launcher, TaskListener listener, AWSEBDeploymentBuilder deploymentBuilder) throws InterruptedException, MacroEvaluationException, IOException {
-        this.build = build;
+    DeployerRunner(Run<?, ?> build, FilePath ws, Launcher launcher, TaskListener listener, AWSEBDeploymentBuilder deploymentBuilder) throws InterruptedException, IOException, MacroEvaluationException {
         this.launcher = launcher;
         this.listener = listener;
         this.workspace = ws;
@@ -49,8 +53,21 @@ public class DeployerRunner {
     public boolean perform() throws Exception {
         FilePath rootFileObject = new FilePath(this.workspace, config.getRootObject());
 
-        final DeployerContext
-                deployerContext = new DeployerContext(config, rootFileObject, listener);
+        AWSCredentialsProvider provider = new DefaultAWSCredentialsProviderChain();
+
+        String credentialsId = config.getCredentialId();
+        if (isNotBlank(credentialsId)) {
+            provider = AWSClientFactory.lookupNamedCredential(credentialsId);
+        }
+
+        AWSCredentials awsCredentials = provider.getCredentials();
+        if(awsCredentials == null) {
+            throw new IllegalStateException("Could not determine AWS credentials.");
+        }
+        AWSEBDeploymentCredentials credentials = new AWSEBDeploymentCredentials(awsCredentials.getAWSAccessKeyId(), awsCredentials.getAWSSecretKey());
+
+        ProxyConfiguration proxy = Jenkins.get().getProxy();
+        DeployerContext deployerContext = new DeployerContext(config, rootFileObject, listener, credentials, proxy);
 
         final VirtualChannel channel = launcher.getChannel();
 

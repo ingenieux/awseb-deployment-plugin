@@ -17,10 +17,12 @@
 package br.com.ingenieux.jenkins.plugins.awsebdeployment.cmd;
 
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentConfig;
+import br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentCredentials;
 import br.com.ingenieux.jenkins.plugins.awsebdeployment.Constants;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.s3.AmazonS3;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import lombok.Data;
 
@@ -37,6 +39,11 @@ public class DeployerContext implements Constants, Serializable {
     final AWSEBDeploymentConfig config;
 
     /**
+     * Deployer Credentials
+     */
+    final AWSEBDeploymentCredentials credentials;
+
+    /**
      * Root File Object
      */
     final FilePath rootFileObject;
@@ -46,10 +53,16 @@ public class DeployerContext implements Constants, Serializable {
      */
     final TaskListener listener;
 
-    public DeployerContext(AWSEBDeploymentConfig config, FilePath rootFileObject, TaskListener listener) {
+    public DeployerContext(AWSEBDeploymentConfig config,
+                           FilePath rootFileObject,
+                           TaskListener listener,
+                           AWSEBDeploymentCredentials credentials,
+                           ProxyConfiguration proxy) {
         this.config = config;
         this.rootFileObject = rootFileObject;
         this.listener = listener;
+        this.credentials = credentials;
+        this.proxy = proxy;
     }
 
     /**
@@ -66,6 +79,11 @@ public class DeployerContext implements Constants, Serializable {
      * Logger Object
      */
     transient PrintStream logger;
+
+    /**
+     * Proxy Configuration
+     */
+    ProxyConfiguration proxy;
 
     /**
      * <p>
