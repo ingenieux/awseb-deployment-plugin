@@ -50,10 +50,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -69,7 +66,6 @@ import static org.apache.commons.lang.StringUtils.defaultIfBlank;
  */
 @SuppressWarnings({"unchecked", "deprecation"})
 public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AWSEBDeploymentBuilder.class);
 
     @Getter
     private AWSEBDeploymentConfig config;
@@ -237,8 +233,7 @@ public class AWSEBDeploymentBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath ws, @Nonnull Launcher launcher,
-                        @Nonnull TaskListener listener) throws IOException {
+    public void perform(Run<?, ?> build, FilePath ws, Launcher launcher, TaskListener listener) throws IOException {
         try {
             new DeployerRunner(build, ws, launcher, listener, this).perform();
         } catch (Exception exc) {
