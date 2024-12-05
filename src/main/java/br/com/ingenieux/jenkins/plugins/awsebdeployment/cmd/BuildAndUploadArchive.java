@@ -21,6 +21,7 @@ import com.amazonaws.services.elasticbeanstalk.model.CreateStorageLocationResult
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import hudson.util.DirScanner;
+import java.nio.file.Files;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -75,7 +76,7 @@ public class BuildAndUploadArchive extends DeployerCommand {
     }
 
     private File getLocalFileObject(FilePath rootFileObject) throws Exception {
-        File resultFile = File.createTempFile("awseb-", ".zip");
+        File resultFile = Files.createTempFile("awseb-", ".zip").toFile();
 
         if (!rootFileObject.isDirectory()) {
             log("Root File Object is a file. We assume its a zip file, which is okay.");
